@@ -21,11 +21,16 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {} };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, feeChoice: {}, updatedAt: 0 };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
-  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* 無視 */ } };
+  // synced=false は表示フィルターなど端末ごとの変更（同期しない）
+  const save = (synced = true) => {
+    if (synced) store.updatedAt = Date.now();
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* 無視 */ }
+    if (synced && window.__schedulePush) window.__schedulePush();
+  };
 
   // ---------- データ整形 ----------
   const CATS = window.CATEGORIES;
@@ -59,7 +64,13 @@
   const hasSessions = (ex) => SESSIONS.some((s) => s.exam_ === ex);
 
   function statusOf(s) {
-    if (s.exam && s.exam[1] < TODAY) return { code: "past", label: "終了", cls: "st-closed" };
+    if (s.exam && s.exam[1] < TODAY) {
+      if (s.announce && s.announce >= TODAY) {
+        const n = diff(TODAY, s.announce);
+        return { code: "result", label: "結果待ち", cls: "st-soon", n, unit: n === 0 ? "今日発表" : "日後に発表" };
+      }
+      return { code: "past", label: "終了", cls: "st-closed" };
+    }
     if (!s.apply) return { code: "unknown", label: "申込 要確認", cls: "st-closed" };
     if (TODAY < s.apply[0]) {
       const n = diff(TODAY, s.apply[0]);
@@ -82,10 +93,20 @@
   const officialLink = (ex) => `<div class="links"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a>
     <button class="pass-btn" data-pass="${ex.id}" title="合格した資格を表示から外します">✓ 合格済みにする</button></div>`;
 
+  const yen = (n) => n.toLocaleString("ja-JP") + "円";
+  const announceOf = (s) => (s.announce ? fmt(s.announce) : s.announceText || "");
+  const announceLabel = (s) => s.announceLabel || "合格発表";
+  function feeText(ex) {
+    if (!ex.fees || !ex.fees.length) return "公式サイトで確認";
+    const t = ex.fees.length === 1 && !ex.fees[0].label ? yen(ex.fees[0].yen)
+      : ex.fees.slice(0, 3).map((f) => `${f.label} ${yen(f.yen)}`).join("／") + (ex.fees.length > 3 ? " ほか" : "");
+    return t;
+  }
+
   function sessionCard(s) {
     const ex = s.exam_, st = statusOf(s);
     const cd = st.n != null && st.code !== "past"
-      ? `<div class="countdown ${st.code === "open" && st.n <= 7 ? "urgent" : ""}"><div class="n">${st.n === 0 && st.code === "open" ? "!" : st.n}</div><div class="u">${st.unit}</div></div>` : "";
+      ? `<div class="countdown ${st.code === "open" && st.n <= 7 ? "urgent" : ""}"><div class="n">${st.n === 0 ? "!" : st.n}</div><div class="u">${st.unit}</div></div>` : "";
     return `
       <article class="card" ${catStyle(ex)}>
         <div class="card-head">
@@ -99,6 +120,8 @@
         <dl class="rows">
           <dt>申込期間</dt><dd>${s.apply ? fmtRange(s.apply) : "公式サイトで確認"}</dd>
           <dt>試験日</dt><dd>${fmtRange(s.exam)}</dd>
+          ${announceOf(s) ? `<dt>${announceLabel(s) === "合格発表" ? "合格発表" : "結果発表"}</dt><dd>${esc(announceOf(s))}</dd>` : ""}
+          <dt>受験料</dt><dd>${esc(feeText(ex))}</dd>
         </dl>
         ${s.detail ? `<div class="detail">${esc(s.detail)}</div>` : ""}
         ${officialLink(ex)}
@@ -114,6 +137,7 @@
           <div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
         </div>
         <p class="note">${esc(noteOf(ex))}</p>
+        <dl class="rows"><dt>受験料</dt><dd>${esc(feeText(ex))}</dd></dl>
         ${officialLink(ex)}
         ${extra}
       </article>`;
@@ -177,6 +201,7 @@
           <article class="card" ${catStyle(ex)}>
             <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div></div>
             <p class="note">${esc(noteOf(ex))}</p>
+            <div class="note">受験料：${esc(feeText(ex))}${ex.feeNote ? `（${esc(ex.feeNote)}）` : ""}</div>
             <div class="sessions">
               ${visible.length ? visible.map((s) => {
                 const st = statusOf(s);
@@ -186,6 +211,7 @@
                     <div class="session-label">${esc(s.label)} <span class="status ${st.cls}">${st.label}</span></div>
                     <div class="session-dates">申込 <b>${s.apply ? fmtRange(s.apply) : "要確認"}</b></div>
                     <div class="session-dates">試験 <b>${fmtRange(s.exam)}</b></div>
+                    ${announceOf(s) ? `<div class="session-dates">発表 <b>${esc(announceOf(s))}</b></div>` : ""}
                     ${s.detail ? `<div class="detail">${esc(s.detail)}</div>` : ""}
                   </div></div>`;
               }).join("") : `<div class="detail" style="padding:10px 0">今後の予定は未掲載です</div>`}
@@ -219,8 +245,10 @@
         add(s.exam[0], { ...base, kind: "exam", text: "試験期間 開始" });
         add(s.exam[1], { ...base, kind: "exam", text: "試験期間 終了" });
       }
+      if (s.announce) add(s.announce, { ...base, kind: "result", text: announceLabel(s) });
+      (s.extra || []).forEach((x) => add(x.date, { ...base, kind: "exam", text: x.text }));
     }
-    const order = { end: 0, exam: 1, start: 2 };
+    const order = { end: 0, exam: 1, result: 2, start: 3 };
     Object.values(map).forEach((a) => a.sort((x, y) => order[x.kind] - order[y.kind]));
     return map;
   }
@@ -242,14 +270,14 @@
       const dow = i % 7;
       const evs = map[d] || [];
       const cls = ["day", d.slice(0, 7) !== calMonth ? "other" : "", d === TODAY ? "is-today" : "", d === calSel ? "is-selected" : "", dow === 0 ? "sun" : dow === 6 ? "sat" : ""].join(" ");
-      const labels = evs.slice(0, 3).map((e) => `<div class="ev k-${e.kind}" style="--c:${e.color}">${e.kind === "end" ? "締" : e.kind === "start" ? "申" : "試"} ${esc(shortName(e.s.exam_))}</div>`).join("")
+      const labels = evs.slice(0, 3).map((e) => `<div class="ev k-${e.kind}" style="--c:${e.color}">${{ end: "締", start: "申", exam: "試", result: "発" }[e.kind]} ${esc(shortName(e.s.exam_))}</div>`).join("")
         + (evs.length > 3 ? `<div class="ev more">+${evs.length - 3}</div>` : "");
       const dots = evs.slice(0, 8).map((e) => `<i class="mk-${e.kind}"></i>`).join("");
       grid += `<button class="${cls}" data-day="${d}"><span class="num">${Number(d.slice(8))}</span>${labels}<span class="dots">${dots}</span></button>`;
     }
 
     const sel = map[calSel] || [];
-    const kindLabel = { start: "申込開始", end: "申込締切", exam: "試験" };
+    const kindLabel = { start: "申込開始", end: "申込締切", exam: "試験", result: "発表" };
     const dayList = `
       <div class="day-list">
         <h3>${fmt(calSel, true)}</h3>
@@ -269,6 +297,7 @@
         <span><i class="ev k-end" style="padding:0 4px">締</i>申込締切</span>
         <span><i class="ev k-start" style="--c:var(--ink-2);padding:0 4px">申</i>申込開始</span>
         <span><i class="ev k-exam" style="--c:var(--ink);padding:0 4px">試</i>試験</span>
+        <span><i class="ev k-result" style="--c:var(--ink-2);padding:0 4px">発</i>合格発表</span>
         <label style="margin-left:auto;cursor:pointer"><input type="checkbox" id="calStar" ${calStarOnly ? "checked" : ""}> ☆だけ表示</label>
       </div>
       <div class="cal">${grid}</div>
@@ -294,6 +323,7 @@
     let h = `<div class="plan-actions">
       <button class="btn" id="icsBtn" ${upcoming.length ? "" : "disabled"}>カレンダー用に書き出す（.ics）</button>
     </div>`;
+    h += feeSummary(upcoming);
     h += `<h2 class="section-title">これからの予定</h2>`;
     h += upcoming.length ? upcoming.map(sessionCard).join("") : `<div class="empty">今後の予定はありません</div>`;
     if (starredAny.length) {
@@ -307,6 +337,30 @@
     }
     if (past.length) h += `<h2 class="section-title">終了した回</h2>` + past.map(sessionCard).join("");
     document.getElementById("view-plan").innerHTML = h + passedHtml;
+  }
+
+  // ☆を付けたこれからの回の受験料合計
+  function feeSummary(list) {
+    const ss = list.filter((s) => s.exam[0] >= TODAY);
+    if (!ss.length) return "";
+    let total = 0, unknown = 0;
+    const rows = ss.map((s) => {
+      const ex = s.exam_, fees = ex.fees || [];
+      let cell;
+      if (!fees.length) { unknown++; cell = `<span class="muted">不明</span>`; }
+      else {
+        const i = Math.min(store.feeChoice[ex.id] || 0, fees.length - 1);
+        total += fees[i].yen;
+        cell = fees.length > 1
+          ? `<select class="fee-select" data-fee="${ex.id}">${fees.map((f, j) => `<option value="${j}" ${j === i ? "selected" : ""}>${esc(f.label)} ${yen(f.yen)}</option>`).join("")}</select>`
+          : `<b>${yen(fees[0].yen)}</b>`;
+      }
+      return `<div class="fee-row"><div class="fee-name">${esc(ex.name)}<span>${esc(s.label)}・${fmt(s.exam[0])}</span></div><div class="fee-val">${cell}</div></div>`;
+    }).join("");
+    return `<h2 class="section-title">受験料</h2>
+      <div class="card fee-card">${rows}
+        <div class="fee-total"><span>合計${unknown ? `（不明 ${unknown}件を除く）` : ""}</span><b>${yen(total)}</b></div>
+      </div>`;
   }
 
   function passedSection() {
@@ -331,7 +385,7 @@
   }
 
   function downloadIcs() {
-    const ss = ALL_SESSIONS.filter((s) => isStar(s.key) && statusOf(s).code !== "past");
+    const ss = ALL_SESSIONS.filter((s) => isStar(s.key) && !isPassed(s.exam_) && statusOf(s).code !== "past");
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//shikaku-schedule//JA", "CALSCALE:GREGORIAN"];
     const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
     const ev = (uid, date, endEx, summary, desc) => {
@@ -344,6 +398,7 @@
       if (s.apply && s.apply[0] >= TODAY) ev(`${id}-start`, s.apply[0], s.apply[0], `【申込開始】${name}`, d);
       if (s.apply && s.apply[1] >= TODAY) ev(`${id}-end`, s.apply[1], s.apply[1], `【申込締切】${name}`, d);
       ev(`${id}-exam`, s.exam[0], s.exam[1], `【試験】${name}`, d);
+      if (s.announce && s.announce >= TODAY) ev(`${id}-result`, s.announce, s.announce, `【${announceLabel(s)}】${name}`, d);
     }
     lines.push("END:VCALENDAR");
     const blob = new Blob([lines.join("\r\n")], { type: "text/calendar" });
@@ -352,6 +407,134 @@
     a.download = "shikaku-schedule.ics";
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }
+
+
+  // ---------- 端末間の同期（GitHub のシークレット Gist） ----------
+  const SYNC_KEY = "shikaku-schedule:sync";
+  const GIST_DESC = "shikaku-schedule state";
+  const GIST_FILE = "state.json";
+  const SYNCED = ["stars", "memo", "passed", "feeChoice", "pref", "updatedAt"];
+  let sync = {};
+  try { sync = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}"); } catch (e) { /* 無視 */ }
+  const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) { /* 無視 */ } };
+  let syncStatus = sync.gistId ? "接続済み" : "未設定";
+
+  async function gh(path, opts = {}) {
+    const res = await fetch(`https://api.github.com${path}`, {
+      ...opts,
+      cache: "no-store",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${sync.token}`,
+        ...(opts.body ? { "Content-Type": "application/json" } : {}),
+      },
+    });
+    if (!res.ok) throw new Error(`GitHub ${res.status}`);
+    return res.status === 204 ? null : res.json();
+  }
+
+  const payload = () => JSON.stringify(Object.fromEntries(SYNCED.map((k) => [k, store[k]])), null, 1);
+
+  function applyRemote(remote) {
+    SYNCED.forEach((k) => { if (remote[k] !== undefined) store[k] = remote[k]; });
+    try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* 無視 */ }
+    rebuild(); renderPref(); renderAll();
+  }
+
+  async function pull() {
+    if (!sync.token || !sync.gistId) return;
+    try {
+      const g = await gh(`/gists/${sync.gistId}`);
+      const f = g.files && g.files[GIST_FILE];
+      if (!f) throw new Error("state.json がありません");
+      const text = f.truncated ? await (await fetch(f.raw_url, { cache: "no-store" })).text() : f.content;
+      const remote = JSON.parse(text || "{}");
+      if ((remote.updatedAt || 0) > (store.updatedAt || 0)) applyRemote(remote);
+      else if ((remote.updatedAt || 0) < (store.updatedAt || 0)) await push();
+      setSyncStatus(`同期済み（${new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}）`);
+    } catch (e) {
+      setSyncStatus(`同期エラー：${e.message}`);
+    }
+  }
+
+  async function push() {
+    if (!sync.token || !sync.gistId) return;
+    try {
+      await gh(`/gists/${sync.gistId}`, { method: "PATCH", body: JSON.stringify({ files: { [GIST_FILE]: { content: payload() } } }) });
+      setSyncStatus(`同期済み（${new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" })}）`);
+    } catch (e) {
+      setSyncStatus(`同期エラー：${e.message}`);
+    }
+  }
+
+  let pushTimer;
+  window.__schedulePush = () => {
+    if (!sync.gistId) return;
+    clearTimeout(pushTimer);
+    setSyncStatus("保存中…");
+    pushTimer = setTimeout(push, 1500);
+  };
+
+  async function connect(token) {
+    sync = { token: token.trim() };
+    setSyncStatus("接続中…");
+    try {
+      await gh("/user");
+      let found = null;
+      for (let page = 1; page <= 5 && !found; page++) {
+        const list = await gh(`/gists?per_page=100&page=${page}`);
+        found = list.find((g) => g.description === GIST_DESC && g.files[GIST_FILE]);
+        if (list.length < 100) break;
+      }
+      if (found) {
+        sync.gistId = found.id; saveSync();
+        await pull();
+      } else {
+        const g = await gh("/gists", { method: "POST", body: JSON.stringify({ description: GIST_DESC, public: false, files: { [GIST_FILE]: { content: payload() } } }) });
+        sync.gistId = g.id; saveSync();
+        setSyncStatus("接続済み（新しく保存先を作成）");
+      }
+    } catch (e) {
+      sync = {}; saveSync();
+      setSyncStatus(`接続できませんでした：${e.message}（トークンと gist の権限を確認）`);
+    }
+    renderSettings();
+  }
+
+  function disconnect() { sync = {}; saveSync(); setSyncStatus("未設定"); renderSettings(); }
+
+  function setSyncStatus(t) {
+    syncStatus = t;
+    const el = document.getElementById("syncStatus");
+    if (el) el.textContent = t;
+    const dot = document.getElementById("syncDot");
+    if (dot) dot.dataset.state = /エラー|できません/.test(t) ? "err" : sync.gistId ? "ok" : "off";
+  }
+
+  function renderSettings() {
+    const box = document.getElementById("settingsBody");
+    if (!box) return;
+    const connected = !!sync.gistId;
+    box.innerHTML = `
+      <h3>端末間の同期</h3>
+      <p class="hint">☆・メモ・合格済み・受験料の選択・受験地を、スマホとPCで共有します。保存先はあなたの GitHub アカウントの<b>シークレット Gist</b>（URLを知っている人だけが見られる非公開メモ）です。</p>
+      <p class="sync-state"><span id="syncDot" class="sync-dot"></span><span id="syncStatus">${esc(syncStatus)}</span></p>
+      ${connected ? `
+        <dl class="rows"><dt>Gist ID</dt><dd><code id="gistId">${esc(sync.gistId)}</code> <button class="btn ghost small" data-copy="gistId">コピー</button></dd></dl>
+        <div class="plan-actions"><button class="btn ghost small" id="syncNow">今すぐ同期</button><button class="btn ghost small" id="syncOff">この端末の同期を解除</button></div>
+        <h3>締切の通知</h3>
+        <p class="hint">毎朝7時ごろ、☆を付けた試験の「申込開始・締切7日前/3日前/前日/当日・試験の7日前/前日・合格発表日」を GitHub の通知（メール・GitHubアプリ）でお知らせします。<br>
+        有効にするには、リポジトリの <b>Settings → Secrets and variables → Actions → Variables</b> に <code>STATE_GIST_ID</code> という名前で上の Gist ID を登録してください。</p>
+      ` : `
+        <ol class="hint steps">
+          <li><a href="https://github.com/settings/tokens/new?scopes=gist&description=shikaku-schedule" target="_blank" rel="noopener">GitHub のトークン作成ページ</a>を開き、<b>gist</b> だけにチェックが入った状態で作成（有効期限は「No expiration」が楽です）</li>
+          <li>表示された <code>ghp_</code> で始まる文字列を下に貼り付けて「接続」</li>
+          <li>ほかの端末でも同じトークンで接続すると、同じデータを共有します</li>
+        </ol>
+        <div class="token-row"><input id="tokenInput" type="password" placeholder="ghp_…" autocomplete="off"><button class="btn small" id="syncConnect">接続</button></div>
+      `}`;
+    setSyncStatus(syncStatus);
   }
 
   // ---------- 全体 ----------
@@ -380,7 +563,7 @@
       if (!c) store.cats = [];
       else store.cats = store.cats.includes(c) ? store.cats.filter((x) => x !== c) : [...store.cats, c];
       if (store.cats.length === Object.keys(CATS).length) store.cats = [];
-      save(); renderAll(); return;
+      save(false); renderAll(); return;
     }
     if (t.dataset.pass) {
       const ex = EXAMS.find((e) => e.id === t.dataset.pass);
@@ -411,6 +594,16 @@
     }
     if (t.dataset.day) { calSel = t.dataset.day; if (calSel.slice(0, 7) !== calMonth) calMonth = calSel.slice(0, 7); renderCalendar(); return; }
     if (t.id === "icsBtn") return downloadIcs();
+    if (t.id === "settingsBtn") { renderSettings(); document.getElementById("settings").showModal(); return; }
+    if (t.id === "settingsClose") { document.getElementById("settings").close(); return; }
+    if (t.id === "syncConnect") { const v = document.getElementById("tokenInput").value; if (v.trim()) connect(v); return; }
+    if (t.id === "syncNow") { pull(); return; }
+    if (t.id === "syncOff") { if (confirm("この端末の同期を解除します（Gist のデータは消えません）")) disconnect(); return; }
+    if (t.dataset.copy) {
+      const text = document.getElementById(t.dataset.copy).textContent;
+      (navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject()).then(() => toast("コピーしました"), () => toast(text));
+      return;
+    }
   });
 
   window.addEventListener("hashchange", () => {
@@ -420,6 +613,7 @@
 
   document.addEventListener("change", (e) => {
     if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
+    if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
     if (e.target.id === "calStar") { calStarOnly = e.target.checked; renderCalendar(); }
   });
   document.addEventListener("input", (e) => {
@@ -432,6 +626,9 @@
   if (AUTO.updated) document.getElementById("autoInfo").textContent = `危険物取扱者・消防設備士（全都道府県）とTOEICの日程は公式サイトから毎日自動で取り込んでいます（最終更新 ${fmt(AUTO.updated, true)}）。`;
   renderPref();
   renderAll();
+  setSyncStatus(syncStatus);
+  if (sync.gistId) pull();
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pull(); });
   const initial = location.hash.slice(1);
   setView(["deadline", "list", "calendar", "plan"].includes(initial) ? initial : "deadline");
 })();

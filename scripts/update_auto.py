@@ -128,8 +128,6 @@ def shoubo_sessions(rows: list[dict]) -> list[dict]:
             detail.append(f"書面申請 {r['paper'][0]:%-m/%-d}〜{r['paper'][1]:%-m/%-d}")
         elif not r["paper"]:
             detail.append("電子申請のみ")
-        if r["announce"]:
-            detail.append(f"合格発表 {r['announce']:%-m/%-d}")
         if r["note"]:
             detail.append(r["note"])
         out.append({
@@ -139,6 +137,7 @@ def shoubo_sessions(rows: list[dict]) -> list[dict]:
             "apply": [r["apply"][0].isoformat(), r["apply"][1].isoformat()],
             "exam": [r["exam"].isoformat()] * 2,
             "detail": " ／ ".join(detail),
+            **({"announce": r["announce"].isoformat()} if r["announce"] else {}),
         })
     return out
 
@@ -146,6 +145,7 @@ def shoubo_sessions(rows: list[dict]) -> list[dict]:
 # ───────────────────────── TOEIC ─────────────────────────
 _D = r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*\(\s*.\s*\)"
 TOEIC_EXAM_RE = re.compile(_D + r"\s*実施")
+TOEIC_RESULT_RE = re.compile(r"認定証発行予定\s*\|?\s*" + _D)
 TOEIC_APPLY_RE = re.compile(_D + r"\s*\d{1,2}:\d{2}\s*[~〜～\-－]\s*" + _D + r"\s*(\d{1,2}:\d{2})")
 
 
@@ -157,13 +157,21 @@ def parse_toeic_html(src: str) -> list[dict]:
 
     events = [(m.start(), "exam", m) for m in TOEIC_EXAM_RE.finditer(text)]
     events += [(m.start(), "apply", m) for m in TOEIC_APPLY_RE.finditer(text)]
+    events += [(m.start(), "result", m) for m in TOEIC_RESULT_RE.finditer(text)]
     events.sort(key=lambda e: e[0])
 
     result: dict[str, dict] = {}
+    results: dict[str, str] = {}
     current = None
     for _, kind, m in events:
         if kind == "exam":
             current = dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+            continue
+        if kind == "result":
+            if current is not None:
+                d = dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+                if current < d and (d - current).days < 60:
+                    results[current.isoformat()] = d.isoformat()
             continue
         if current is None or current.isoformat() in result:
             continue
@@ -178,7 +186,11 @@ def parse_toeic_html(src: str) -> list[dict]:
             "exam": [current.isoformat()] * 2,
             "detail": f"午前・午後の1日2回 ／ 締切は最終日 {m.group(7)}",
         }
-    return [result[k] for k in sorted(result)]
+    for k, d in results.items():
+        if k in result:
+            result[k]["announce"] = d
+            result[k]["announceLabel"] = "スコア発表（デジタル認定証）"
+    return [result[k] for k in sorted(result) if k >= (TODAY - dt.timedelta(days=60)).isoformat()]
 
 
 def warn(msg: str):

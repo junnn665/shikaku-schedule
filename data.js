@@ -1,6 +1,7 @@
 // 資格試験データ
 // 日付は "YYYY-MM-DD"。pref を付けた回はその受験地を選んだときだけ表示。fallback は該当受験地の回がないときに表示。
 //期間は [開始, 終了]。null は未発表・不明。
+// fees: 受験料 [{label, yen}]。announce: 合格発表日（確定日）、announceText: 時期だけ分かっている場合。
 // 情報確認日: 2026-10-10。申込前に必ず公式サイトで最新情報を確認してください。
 window.DATA_CHECKED = "2026-10-10";
 
@@ -17,6 +18,7 @@ window.EXAMS = [
   {
     id: "ap", name: "応用情報技術者試験（AP）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    fees: [{ label: "", yen: 7500 }],
     note: "令和8年度からCBT方式に全面移行。前期・後期とも申込は1回のみ。科目A群とB群を同時に予約。",
     sessions: [
       { label: "令和8年度 前期", apply: ["2026-10-06", "2026-11-07"], exam: ["2026-10-28", "2026-12-06"],
@@ -28,6 +30,7 @@ window.EXAMS = [
   {
     id: "sc", name: "情報処理安全確保支援士試験（SC）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    fees: [{ label: "", yen: 7500 }],
     note: "CBT方式。前期・後期の年2回。",
     sessions: [
       { label: "令和8年度 前期", apply: ["2026-10-06", "2026-10-24"], exam: ["2026-10-17", "2026-11-23"],
@@ -39,6 +42,7 @@ window.EXAMS = [
   {
     id: "koudo-zenki", name: "高度試験 前期（ST・SA・NW・SM）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    fees: [{ label: "", yen: 7500 }],
     note: "ITストラテジスト／システムアーキテクト／ネットワークスペシャリスト／ITサービスマネージャ。CBT方式。",
     sessions: [
       { label: "令和8年度 前期", apply: ["2026-10-06", "2026-10-24"], exam: ["2026-10-17", "2026-11-23"],
@@ -48,6 +52,7 @@ window.EXAMS = [
   {
     id: "koudo-kouki", name: "高度試験 後期（PM・DB・ES・AU）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    fees: [{ label: "", yen: 7500 }],
     note: "プロジェクトマネージャ／データベーススペシャリスト／エンベデッド／システム監査。CBT方式。",
     sessions: [
       { label: "令和8年度 後期", apply: ["2027-01-27", "2027-02-27"], exam: ["2027-02-20", "2027-03-28"],
@@ -57,16 +62,19 @@ window.EXAMS = [
   {
     id: "fe", name: "基本情報技術者試験（FE）", cat: "it", org: "IPA", anytime: true,
     url: "https://www.ipa.go.jp/shiken/kubun/fe.html",
+    fees: [{ label: "", yen: 7500 }],
     note: "CBT方式の通年試験。テストセンターの空きがあれば随時申込・受験可能。", sessions: [],
   },
   {
     id: "ip", name: "ITパスポート試験", cat: "it", org: "IPA", anytime: true,
     url: "https://www3.jitec.ipa.go.jp/JitesCbt/",
+    fees: [{ label: "", yen: 7500 }],
     note: "CBT方式の通年試験。随時申込・受験可能。", sessions: [],
   },
   {
     id: "sg", name: "情報セキュリティマネジメント試験（SG）", cat: "it", org: "IPA", anytime: true,
     url: "https://www.ipa.go.jp/shiken/kubun/sg.html",
+    fees: [{ label: "", yen: 7500 }],
     note: "CBT方式の通年試験。随時申込・受験可能。", sessions: [],
   },
   {
@@ -79,10 +87,11 @@ window.EXAMS = [
   {
     id: "boki1", name: "日商簿記検定 1級", cat: "money", org: "日本商工会議所",
     url: "https://www.kentei.ne.jp/bookkeeping",
+    fees: [{ label: "", yen: 8800 }], feeNote: "別途、事務手数料がかかる場合あり",
     note: "1級は紙の統一試験のみ（年2回：6月・11月）。申込期間は受験地の商工会議所ごとに異なります。",
     sessions: [
-      { label: "第174回（名古屋商工会議所）", pref: "愛知県", apply: ["2026-10-02", "2026-10-09"], exam: ["2026-11-15", "2026-11-15"],
-        detail: "個人申込。会場は名古屋商工会議所のみ。合格発表 2027/1/4" },
+      { label: "第174回（名古屋商工会議所）", pref: "愛知県", apply: ["2026-10-02", "2026-10-09"], exam: ["2026-11-15", "2026-11-15"], announce: "2027-01-04",
+        detail: "個人申込。会場は名古屋商工会議所のみ" },
       { label: "第174回（京都商工会議所）", pref: "京都府", apply: ["2026-09-28", "2026-10-13"], exam: ["2026-11-15", "2026-11-15"],
         detail: "" },
       { label: "第174回", fallback: true, apply: null, exam: ["2026-11-15", "2026-11-15"],
@@ -92,6 +101,7 @@ window.EXAMS = [
   {
     id: "boki23", name: "日商簿記検定 2級・3級", cat: "money", org: "日本商工会議所",
     url: "https://www.kentei.ne.jp/bookkeeping",
+    fees: [{ label: "2級", yen: 5500 }, { label: "3級", yen: 3300 }], feeNote: "ネット試験は別途事務手数料あり（商工会議所・テストセンターにより異なる）",
     prefNote: { "愛知県": "名古屋商工会議所は2・3級の紙の試験を実施しません（ネット試験を案内）。第175回を紙で受けるなら県内の他の商工会議所で要確認。" },
     note: "2026年度から2・3級はネット試験（CBT・随時）が中心。紙の統一試験は第175回（2027/2/28）が移行措置として実施されますが、施行しない商工会議所もあります。",
     sessions: [
@@ -102,24 +112,27 @@ window.EXAMS = [
   {
     id: "fp1", name: "FP技能検定 1級 学科", cat: "money", org: "金融財政事情研究会（きんざい）",
     url: "https://www.kinzai.or.jp/fp",
+    fees: [{ label: "学科", yen: 8900 }, { label: "実技（資産相談業務）", yen: 28000 }],
     note: "1級学科は紙の試験。実技（きんざい）は2027年2月予定、申込は11月中旬〜12月中旬見込み。",
     sessions: [
-      { label: "2027年1月試験", apply: ["2026-10-28", "2026-12-01"], exam: ["2027-01-24", "2027-01-24"],
-        detail: "合格発表 2027/3/5" },
+      { label: "2027年1月試験", apply: ["2026-10-28", "2026-12-01"], exam: ["2027-01-24", "2027-01-24"], announce: "2027-03-05",
+        detail: "" },
     ],
   },
   {
     id: "fp23", name: "FP技能検定 2級・3級", cat: "money", org: "きんざい／日本FP協会", anytime: true,
     url: "https://www.jafp.or.jp/exam/",
+    fees: [{ label: "2級 学科＋実技", yen: 11700 }, { label: "3級 学科＋実技", yen: 8000 }, { label: "2級 学科のみ", yen: 5700 }, { label: "3級 学科のみ", yen: 4000 }],
     note: "CBT方式で通年実施（休止期間あり。年度末の3月下旬〜、年末年始など）。", sessions: [],
   },
   {
     id: "takken", name: "宅地建物取引士（宅建）", cat: "money", org: "不動産適正取引推進機構",
     url: "https://www.retio.or.jp/exam/",
+    fees: [{ label: "", yen: 8200 }],
     note: "年1回・10月第3日曜が通例。申込は例年7月（ネット7/1〜7/31、郵送7/1〜7/15）。",
     sessions: [
-      { label: "令和8年度", apply: ["2026-07-01", "2026-07-31"], exam: ["2026-10-18", "2026-10-18"],
-        detail: "合格発表 2026/11/25。次回（令和9年度）は2027年7月申込の見込み。" },
+      { label: "令和8年度", apply: ["2026-07-01", "2026-07-31"], exam: ["2026-10-18", "2026-10-18"], announce: "2026-11-25",
+        detail: "次回（令和9年度）は2027年7月申込の見込み。" },
     ],
   },
 
@@ -127,6 +140,7 @@ window.EXAMS = [
   {
     id: "toeic", name: "TOEIC L&R 公開テスト", cat: "lang", org: "IIBC",
     url: "https://www.iibc-global.org/toeic/test/lr/guide01/schedule.html",
+    fees: [{ label: "紙の認定証あり", yen: 7810 }, { label: "紙の認定証なし", yen: 7700 }], feeNote: "リピート受験割引あり",
     note: "午前・午後の1日2回実施。申込はインターネット（締切は15:00）。",
     sessions: [
       ["2026-10-25", "2026-07-29", "2026-09-10"],
@@ -143,10 +157,11 @@ window.EXAMS = [
   {
     id: "eiken", name: "実用英語技能検定（英検）", cat: "lang", org: "日本英語検定協会",
     url: "https://www.eiken.or.jp/eiken/schedule/",
+    fees: [{ label: "2級", yen: 9000 }, { label: "準1級", yen: 10400 }, { label: "1級", yen: 12400 }, { label: "準2級", yen: 8400 }, { label: "3級", yen: 6800 }], feeNote: "本会場の目安（2024年改定時点）。最新は公式で確認",
     note: "従来型・本会場の日程。準会場・英検S-CBTは別日程。",
     sessions: [
       { label: "2026年度 第3回", apply: ["2026-10-30", "2026-12-14"], exam: ["2027-01-24", "2027-01-24"],
-        detail: "コンビニ払いは12/11締切。二次（1〜3級）A日程 2/28・B日程 3/7（年齢で指定）" },
+        detail: "コンビニ払いは12/11締切。二次（1〜3級）A日程 2/28・B日程 3/7（年齢で指定）", extra: [{ date: "2027-02-28", text: "英検 二次A日程" }, { date: "2027-03-07", text: "英検 二次B日程" }] },
     ],
   },
 
@@ -154,15 +169,17 @@ window.EXAMS = [
   {
     id: "denken3", name: "第三種電気主任技術者（電験三種）", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/",
+    fees: [{ label: "", yen: 7700 }],
     note: "上期・下期の年2回。CBT方式か筆記方式を選択。",
     sessions: [
-      { label: "令和8年度 下期", apply: ["2026-11-09", "2026-11-26"], exam: ["2027-02-04", "2027-03-21"],
+      { label: "令和8年度 下期", apply: ["2026-11-09", "2026-11-26"], exam: ["2027-02-04", "2027-03-21"], announceText: "2027年4月上旬頃（Web公表）",
         detail: "CBT 2/4〜2/28 ／ 筆記 3/21。CBT会場予約は 12/7〜1/7（予約しないと受験不可）" },
     ],
   },
   {
     id: "kikenbutsu", name: "危険物取扱者（甲・乙・丙）", cat: "tech", org: "消防試験研究センター", regional: true,
     url: "https://shinsei.shoubo-shiken.or.jp/shoubou_ia/iajs9001.do?menjo_kbn=1",
+    fees: [{ label: "乙種", yen: 5300 }, { label: "甲種", yen: 7200 }, { label: "丙種", yen: 4200 }], feeNote: "2024年5月改定後の標準額。都道府県の条例で決まるため受験地で確認",
     note: "都道府県ごとに年数回〜毎月実施。選んだ受験地の日程を表示します（公式の全国日程から毎日自動取り込み）。",
         sessions: [
       ...[
@@ -178,6 +195,7 @@ window.EXAMS = [
   {
     id: "shoubou", name: "消防設備士（甲・乙）", cat: "tech", org: "消防試験研究センター", regional: true,
     url: "https://shinsei.shoubo-shiken.or.jp/shoubou_ia/iajs9001.do?menjo_kbn=2",
+    fees: [{ label: "乙種", yen: 4400 }, { label: "甲種", yen: 6600 }], feeNote: "2024年5月改定後の標準額。受験地で確認",
     note: "都道府県ごとに実施。選んだ受験地の日程を表示します（公式の全国日程から毎日自動取り込み）。",
         sessions: [
       { label: "愛知 2/14", pref: "愛知県", apply: ["2027-01-04", "2027-01-12"], exam: ["2027-02-14", "2027-02-14"],
@@ -189,8 +207,8 @@ window.EXAMS = [
     url: "https://www.fcip-shiken.jp/",
     note: "令和8年度の申込は受付終了。来年度の申込は例年1級が1〜2月、2級（前期）が2〜3月頃。",
     sessions: [
-      { label: "1級 第二次検定", apply: null, exam: ["2026-10-18", "2026-10-18"], detail: "合格発表 2027/1/8" },
-      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-11-08", "2026-11-08"], detail: "一次発表 12/21 ／ 二次発表 2027/2/5" },
+      { label: "1級 第二次検定", apply: null, exam: ["2026-10-18", "2026-10-18"], announce: "2027-01-08", detail: "" },
+      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-11-08", "2026-11-08"], announce: "2026-12-21", detail: "二次の発表は 2027/2/5" },
     ],
   },
   {
@@ -198,8 +216,8 @@ window.EXAMS = [
     url: "https://www.jctc.jp/",
     note: "令和8年度の申込は受付終了。",
     sessions: [
-      { label: "1級 第二次検定", apply: null, exam: ["2026-10-04", "2026-10-04"], detail: "合格発表 2027/1/8" },
-      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-10-25", "2026-10-25"], detail: "一次発表 12/2 ／ 二次発表 2027/2/3" },
+      { label: "1級 第二次検定", apply: null, exam: ["2026-10-04", "2026-10-04"], announce: "2027-01-08", detail: "" },
+      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-10-25", "2026-10-25"], announce: "2026-12-02", detail: "二次の発表は 2027/2/3" },
     ],
   },
   {
@@ -207,8 +225,8 @@ window.EXAMS = [
     url: "https://www.jctc.jp/",
     note: "令和8年度の申込は受付終了。",
     sessions: [
-      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-11-15", "2026-11-15"], detail: "一次発表 2027/1/5 ／ 二次発表 3/3" },
-      { label: "1級 第二次検定", apply: null, exam: ["2026-12-06", "2026-12-06"], detail: "合格発表 2027/3/3" },
+      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-11-15", "2026-11-15"], announce: "2027-01-05", detail: "二次の発表は 2027/3/3" },
+      { label: "1級 第二次検定", apply: null, exam: ["2026-12-06", "2026-12-06"], announce: "2027-03-03", detail: "" },
     ],
   },
   {
@@ -216,8 +234,8 @@ window.EXAMS = [
     url: "https://www.jctc.jp/",
     note: "令和8年度の申込は受付終了。",
     sessions: [
-      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-11-15", "2026-11-15"], detail: "一次発表 2027/1/5 ／ 二次発表 3/3" },
-      { label: "1級 第二次検定", apply: null, exam: ["2026-12-06", "2026-12-06"], detail: "合格発表 2027/3/3" },
+      { label: "2級 第一次（後期）・第二次", apply: null, exam: ["2026-11-15", "2026-11-15"], announce: "2027-01-05", detail: "二次の発表は 2027/3/3" },
+      { label: "1級 第二次検定", apply: null, exam: ["2026-12-06", "2026-12-06"], announce: "2027-03-03", detail: "" },
     ],
   },
 
@@ -225,20 +243,22 @@ window.EXAMS = [
   {
     id: "bijihou", name: "ビジネス実務法務検定", cat: "biz", org: "東京商工会議所",
     url: "https://kentei.tokyo-cci.or.jp/houmu/",
+    fees: [{ label: "2級（IBT）", yen: 7700 }, { label: "3級（IBT）", yen: 5500 }, { label: "1級（CBT利用料込み）", yen: 12100 }, { label: "2級（CBT利用料込み）", yen: 9900 }, { label: "3級（CBT利用料込み）", yen: 7700 }], feeNote: "2025年度の金額",
     note: "2・3級はIBT/CBT方式で年2シーズン。1級は年1回。",
     sessions: [
-      { label: "2・3級 第2シーズン", apply: ["2026-09-16", "2026-09-29"], exam: ["2026-10-22", "2026-11-09"], detail: "期間内に受験日時を選択" },
-      { label: "1級", apply: ["2026-11-04", "2026-11-11"], exam: ["2026-12-06", "2026-12-06"], detail: "申込締切 11/11 18:00" },
+      { label: "2・3級 第2シーズン", apply: ["2026-09-16", "2026-09-29"], exam: ["2026-10-22", "2026-11-09"], announceText: "試験直後に画面で判定", detail: "期間内に受験日時を選択" },
+      { label: "1級", apply: ["2026-11-04", "2026-11-11"], exam: ["2026-12-06", "2026-12-06"], announceText: "2027年3月", detail: "申込締切 11/11 18:00" },
     ],
   },
   {
     id: "gkentei", name: "G検定（ジェネラリスト検定）", cat: "biz", org: "日本ディープラーニング協会",
     url: "https://www.jdla.org/certificate/general/",
+    fees: [{ label: "一般", yen: 13200 }, { label: "学生", yen: 5500 }, { label: "再受験（一般）", yen: 6600 }],
     note: "オンライン（自宅）試験が中心。2027年は第1・3・5回に会場試験あり。",
     sessions: [
       { label: "2026 第6回（オンライン）", apply: ["2026-09-11", "2026-10-29"], exam: ["2026-11-06", "2026-11-07"], detail: "11/6(金)16時 または 11/7(土)13時" },
       { label: "2027 第1回（会場）", apply: ["2026-11-13", "2027-01-12"], exam: ["2027-01-15", "2027-01-17"], detail: "申込は受験日の3日前まで" },
-      { label: "2027 第1回（オンライン）", apply: ["2026-11-13", "2027-01-08"], exam: ["2027-01-16", "2027-01-16"], detail: "合否発表 2月上旬" },
+      { label: "2027 第1回（オンライン）", apply: ["2026-11-13", "2027-01-08"], exam: ["2027-01-16", "2027-01-16"], announceText: "2月上旬", detail: "" },
       { label: "2027 第2回（オンライン）", apply: ["2027-01-22", "2027-02-25"], exam: ["2027-03-05", "2027-03-06"], detail: "" },
       { label: "2027 第3回（オンライン）", apply: ["2027-03-12", "2027-04-27"], exam: ["2027-05-08", "2027-05-08"], detail: "会場試験は 5/7〜5/9" },
       { label: "2027 第4回（オンライン）", apply: ["2027-05-14", "2027-06-24"], exam: ["2027-07-02", "2027-07-03"], detail: "" },

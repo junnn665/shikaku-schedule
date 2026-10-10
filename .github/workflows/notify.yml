@@ -1,0 +1,30 @@
+name: 締切の通知
+
+on:
+  schedule:
+    # 毎朝 7:03（日本時間）。UTCで22:03
+    - cron: "3 22 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: ☆を付けた試験を確認して通知
+        env:
+          STATE_GIST_ID: ${{ vars.STATE_GIST_ID }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_OWNER: ${{ github.repository_owner }}
+        run: node scripts/notify.mjs
