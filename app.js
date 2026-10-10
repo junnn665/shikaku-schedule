@@ -21,7 +21,7 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [] };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県" };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
@@ -30,10 +30,26 @@
   // ---------- データ整形 ----------
   const CATS = window.CATEGORIES;
   const EXAMS = window.EXAMS;
-  const SESSIONS = [];
+  const PREFS = ["北海道","青森県","岩手県","宮城県","秋田県","山形県","福島県","茨城県","栃木県","群馬県","埼玉県","千葉県","東京都","神奈川県","新潟県","富山県","石川県","福井県","山梨県","長野県","岐阜県","静岡県","愛知県","三重県","滋賀県","京都府","大阪府","兵庫県","奈良県","和歌山県","鳥取県","島根県","岡山県","広島県","山口県","徳島県","香川県","愛媛県","高知県","福岡県","佐賀県","長崎県","熊本県","大分県","宮崎県","鹿児島県","沖縄県"];
+  if (!PREFS.includes(store.pref)) store.pref = "愛知県";
+
+  // 全回（受験予定用）と、選んだ受験地で表示する回
+  const ALL_SESSIONS = [];
   EXAMS.forEach((ex) => {
-    ex.sessions.forEach((s, i) => SESSIONS.push({ ...s, key: `${ex.id}#${i}`, exam_: ex }));
+    ex.sessions.forEach((s, i) => ALL_SESSIONS.push({ ...s, key: `${ex.id}#${i}`, exam_: ex }));
   });
+  let SESSIONS = [];
+  function rebuild() {
+    SESSIONS = ALL_SESSIONS.filter((s) => {
+      if (s.pref) return s.pref === store.pref;
+      if (s.fallback) return !ALL_SESSIONS.some((o) => o.exam_ === s.exam_ && o.pref === store.pref);
+      return true;
+    });
+  }
+  rebuild();
+  const noteOf = (ex) => (ex.prefNote && ex.prefNote[store.pref]) || ex.note;
+  const urlOf = (ex) => (ex.prefUrl && ex.prefUrl[store.pref]) || ex.url;
+  const hasSessions = (ex) => SESSIONS.some((s) => s.exam_ === ex);
 
   function statusOf(s) {
     if (s.exam && s.exam[1] < TODAY) return { code: "past", label: "終了", cls: "st-closed" };
@@ -56,7 +72,7 @@
   const starBtn = (key) => `<button class="star ${isStar(key) ? "is-on" : ""}" data-star="${key}" aria-label="受験予定に追加" title="受験予定に追加">${isStar(key) ? "★" : "☆"}</button>`;
   const catStyle = (ex) => `style="--cat:${CATS[ex.cat].color}"`;
   const subLine = (ex) => `<div class="sub">${esc(CATS[ex.cat].label)} ・ ${esc(ex.org)}</div>`;
-  const officialLink = (ex) => `<div class="links"><a href="${esc(ex.url)}" target="_blank" rel="noopener">公式・出典ページ ↗</a></div>`;
+  const officialLink = (ex) => `<div class="links"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a></div>`;
 
   function sessionCard(s) {
     const ex = s.exam_, st = statusOf(s);
@@ -89,13 +105,18 @@
           ${starBtn(key)}
           <div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
         </div>
-        <p class="note">${esc(ex.note)}</p>
+        <p class="note">${esc(noteOf(ex))}</p>
         ${officialLink(ex)}
         ${extra}
       </article>`;
   }
 
   // ---------- フィルター ----------
+  function renderPref() {
+    const sel = document.getElementById("pref");
+    sel.innerHTML = PREFS.map((p) => `<option ${p === store.pref ? "selected" : ""}>${p}</option>`).join("");
+  }
+
   function renderFilters() {
     const all = store.cats.length === 0;
     let h = `<button class="chip ${all ? "is-on" : ""}" data-cat="">すべて</button>`;
@@ -111,7 +132,7 @@
     const list = SESSIONS.filter((s) => catOn(s.exam_.cat));
     const open = list.filter((s) => statusOf(s).code === "open").sort((a, b) => a.apply[1].localeCompare(b.apply[1]));
     const before = list.filter((s) => statusOf(s).code === "before").sort((a, b) => a.apply[0].localeCompare(b.apply[0]));
-    const anytime = EXAMS.filter((e) => (e.anytime || e.regional) && catOn(e.cat));
+    const anytime = EXAMS.filter((e) => !hasSessions(e) && catOn(e.cat));
 
     let h = `<h2 class="section-title">いま申込できる（締切が近い順）</h2>`;
     h += open.length ? open.map(sessionCard).join("") : `<div class="empty">受付中の試験はありません</div>`;
@@ -140,14 +161,14 @@
       if (!exams.length) continue;
       h += `<h2 class="section-title">${esc(c.label)}</h2>`;
       for (const ex of exams) {
-        if (!ex.sessions.length) { h += simpleExamCard(ex); continue; }
+        if (!hasSessions(ex)) { h += simpleExamCard(ex); continue; }
         const ss = SESSIONS.filter((s) => s.exam_ === ex);
         const past = ss.filter((s) => statusOf(s).code === "past");
         const visible = showPast.has(ex.id) ? ss : ss.filter((s) => statusOf(s).code !== "past");
         h += `
           <article class="card" ${catStyle(ex)}>
             <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div></div>
-            <p class="note">${esc(ex.note)}</p>
+            <p class="note">${esc(noteOf(ex))}</p>
             <div class="sessions">
               ${visible.length ? visible.map((s) => {
                 const st = statusOf(s);
@@ -248,7 +269,7 @@
 
   // ---------- 受験予定 ----------
   function renderPlan() {
-    const starredSessions = SESSIONS.filter((s) => isStar(s.key));
+    const starredSessions = ALL_SESSIONS.filter((s) => isStar(s.key));
     const starredAny = EXAMS.filter((e) => isStar(`${e.id}#any`));
     const examIds = [...new Set([...starredSessions.map((s) => s.exam_.id), ...starredAny.map((e) => e.id)])];
     document.getElementById("planCount").textContent = starredSessions.length + starredAny.length || "";
@@ -280,7 +301,7 @@
   }
 
   function downloadIcs() {
-    const ss = SESSIONS.filter((s) => isStar(s.key) && statusOf(s).code !== "past");
+    const ss = ALL_SESSIONS.filter((s) => isStar(s.key) && statusOf(s).code !== "past");
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//shikaku-schedule//JA", "CALSCALE:GREGORIAN"];
     const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
     const ev = (uid, date, endEx, summary, desc) => {
@@ -354,6 +375,7 @@
   });
 
   document.addEventListener("change", (e) => {
+    if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
     if (e.target.id === "calStar") { calStarOnly = e.target.checked; renderCalendar(); }
   });
   document.addEventListener("input", (e) => {
@@ -363,6 +385,7 @@
 
   document.getElementById("today").textContent = `今日 ${fmt(TODAY, true)}`;
   document.getElementById("checked").textContent = fmt(window.DATA_CHECKED, true);
+  renderPref();
   renderAll();
   const initial = location.hash.slice(1);
   setView(["deadline", "list", "calendar", "plan"].includes(initial) ? initial : "deadline");
