@@ -34,9 +34,14 @@
   if (!PREFS.includes(store.pref)) store.pref = "愛知県";
 
   // 全回（受験予定用）と、選んだ受験地で表示する回
+  // GitHub Actions が自動で取り込んだ日程（data_auto.js）があれば、そちらを優先
+  const AUTO = window.AUTO || {};
+  EXAMS.forEach((ex) => {
+    if (Array.isArray(AUTO[ex.id]) && AUTO[ex.id].length) ex.sessions = AUTO[ex.id];
+  });
   const ALL_SESSIONS = [];
   EXAMS.forEach((ex) => {
-    ex.sessions.forEach((s, i) => ALL_SESSIONS.push({ ...s, key: `${ex.id}#${i}`, exam_: ex }));
+    ex.sessions.forEach((s, i) => ALL_SESSIONS.push({ ...s, key: s.id ? `${ex.id}@${s.id}` : `${ex.id}#${i}`, exam_: ex }));
   });
   let SESSIONS = [];
   function rebuild() {
@@ -385,6 +390,7 @@
 
   document.getElementById("today").textContent = `今日 ${fmt(TODAY, true)}`;
   document.getElementById("checked").textContent = fmt(window.DATA_CHECKED, true);
+  if (AUTO.updated) document.getElementById("autoInfo").textContent = `危険物取扱者・消防設備士（全都道府県）とTOEICの日程は公式サイトから毎日自動で取り込んでいます（最終更新 ${fmt(AUTO.updated, true)}）。`;
   renderPref();
   renderAll();
   const initial = location.hash.slice(1);

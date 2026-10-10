@@ -1,6 +1,11 @@
 # 資格スケジュール帳 — 更新ルール
 
-静的サイト（GitHub Pages、`main` ブランチの root）。データは `data.js` のみ。HTML/CSS/JS は基本的に触らない。
+静的サイト（GitHub Pages、`main` ブランチの root）。HTML/CSS/JS は基本的に触らない。
+
+- `data.js`：手で管理するデータ
+- `data_auto.js`：GitHub Actions（`.github/workflows/update-data.yml` → `scripts/update_auto.py`）が毎日自動生成。**手で編集しない**。
+  危険物取扱者・消防設備士（全都道府県）と TOEIC はここから表示される（`data.js` 側の同じ資格の回は自動データがないときの予備）。
+  自動取り込みが壊れている（`data_auto.js` の `sources` の日付が古い、Actions が失敗している）場合は `scripts/update_auto.py` を直す。
 
 ## 定期更新でやること
 
@@ -8,11 +13,8 @@
    - 新しく発表された回（申込期間・試験日）があれば `sessions` に追加
    - 既存の回の日付が変わっていれば修正
    - 申込期間が `null`（未発表）の回が発表されていれば埋める
-2. 受験地ごとのデータ（`pref`）は **愛知県** を優先して保守する。
-   - 危険物取扱者・消防設備士：消防試験研究センターの日程ファイル
-     `https://shinsei.shoubo-shiken.or.jp/shoubou_ia/iajs9001.do?download=1&menjo_kbn=1&ki_kbn=1|2&nendo=YYYY`
-     （menjo_kbn=1 危険物 / 2 消防設備士、ki_kbn=1 前期 / 2 後期）から愛知県の行を拾う
-   - 日商簿記1級：名古屋商工会議所の案内
+2. 受験地ごとのデータ（`pref`）は **愛知県** を優先して保守する（日商簿記1級：名古屋商工会議所の案内）。
+   危険物取扱者・消防設備士・TOEIC は自動取り込みに任せる。
 3. 終わった回は消さずに残してよい（画面側で「終了」扱いになる）。ただし2年以上前の回は削除してよい。
 4. `window.DATA_CHECKED` を確認した日付に更新する。
 5. `node -e "global.window={};require('./data.js')"` で構文エラーがないことを確認する。

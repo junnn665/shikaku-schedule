@@ -1,0 +1,49 @@
+name: 試験日程の自動取り込み
+
+on:
+  schedule:
+    # 毎日 6:17（日本時間）。UTCで21:17
+    - cron: "17 21 * * *"
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "scripts/**"
+      - ".github/workflows/update-data.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 依存パッケージを入れる
+        run: pip install -r scripts/requirements.txt
+
+      - name: 公式サイトから取り込む
+        run: python scripts/update_auto.py
+
+      - name: 変更があればコミット
+        run: |
+          if git diff --quiet -- data_auto.js; then
+            echo "変更なし"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data_auto.js
+          git commit -m "試験日程を自動更新（$(TZ=Asia/Tokyo date +%Y-%m-%d)）"
+          git pull --rebase origin main
+          git push
