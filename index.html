@@ -25,18 +25,23 @@
         <button class="tab is-active" data-view="deadline" role="tab">締切が近い</button>
         <button class="tab" data-view="list" role="tab">一覧</button>
         <button class="tab" data-view="calendar" role="tab">カレンダー</button>
+        <button class="tab" data-view="route" role="tab">ルート</button>
         <button class="tab" data-view="plan" role="tab">受験予定<span class="badge" id="planCount"></span></button>
+        <button class="tab" data-view="have" role="tab">取得済み<span class="badge soft" id="haveCount"></span></button>
       </nav>
     </div>
   </header>
 
   <main class="wrap">
+    <div class="searchbar" id="searchbar"><input id="q" type="search" placeholder="資格名で検索（例：でんけん、乙4、施工管理）" autocomplete="off" enterkeyhint="search"></div>
     <div class="filters" id="filters"></div>
 
     <section id="view-deadline" class="view is-active"></section>
     <section id="view-list" class="view"></section>
     <section id="view-calendar" class="view"></section>
+    <section id="view-route" class="view"></section>
     <section id="view-plan" class="view"></section>
+    <section id="view-have" class="view"></section>
   </main>
 
   <dialog id="settings" class="settings">
@@ -52,11 +57,12 @@
   <footer class="wrap site-footer">
     <p>情報確認日：<span id="checked"></span>。日程は変更される場合があります。申込前に必ず各公式サイトで確認してください。</p>
     <p id="autoInfo"></p>
-    <p>☆・メモ・合格済みはこのブラウザに保存されます。⚙ から同期を設定すると、ほかの端末と共有できます。</p>
+    <p>☆・メモ・合格や免状の記録はこのブラウザに保存されます。⚙ から同期を設定すると、ほかの端末と共有できます。</p>
   </footer>
 
   <script src="data.js"></script>
   <script src="data_auto.js"></script>
+  <script src="routes.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

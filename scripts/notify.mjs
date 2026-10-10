@@ -50,20 +50,27 @@ const diff = (a, b) => Math.round((toD(b) - toD(a)) / 86400000);
 const WD = ["日", "月", "火", "水", "木", "金", "土"];
 const md = (s) => { const d = toD(s); return `${d.getUTCMonth() + 1}/${d.getUTCDate()}(${WD[d.getUTCDay()]})`; };
 
-function eventsFor(s) {
+// pr：サイトの「申込→入金→受験票→受験→結果確認」チェック
+function eventsFor(s, pr = {}) {
   const out = [];
-  if (s.apply) {
-    if (s.apply[0] === TODAY) out.push({ pri: 2, text: `申込受付が始まりました（締切 ${md(s.apply[1])}）` });
+  if (s.apply && !(pr.applied && pr.paid)) {
+    if (s.apply[0] === TODAY && !pr.applied) out.push({ pri: 2, text: `申込受付が始まりました（締切 ${md(s.apply[1])}）` });
     const n = diff(TODAY, s.apply[1]);
-    if (n === 0) out.push({ pri: 0, text: "⚠️ 今日が申込締切です" });
-    else if ([1, 3, 7].includes(n)) out.push({ pri: n === 1 ? 0 : 1, text: `申込締切まであと${n}日（${md(s.apply[1])}）` });
+    const what = pr.applied ? "受験料の支払い" : "申込";
+    if (n === 0) out.push({ pri: 0, text: `⚠️ 今日が${what}の締切です` });
+    else if ([1, 3, 7].includes(n)) out.push({ pri: n === 1 ? 0 : 1, text: `${what}の締切まであと${n}日（${md(s.apply[1])}）` });
   }
   const e = diff(TODAY, s.exam[0]);
-  if (e === 1) out.push({ pri: 1, text: `明日が試験です（${md(s.exam[0])}）` });
-  else if (e === 7) out.push({ pri: 2, text: `試験まであと1週間（${md(s.exam[0])}）` });
-  if (s.announce === TODAY) out.push({ pri: 1, text: `今日は${s.announceLabel || "合格発表"}の日です` });
+  const ticket = pr.applied && !pr.ticket ? "。受験票・会場を確認しましょう" : "";
+  if (e === 1) out.push({ pri: 1, text: `明日が試験です（${md(s.exam[0])}）${ticket}` });
+  else if (e === 7) out.push({ pri: 2, text: `試験まであと1週間（${md(s.exam[0])}）${ticket}` });
+  if (s.announce === TODAY && !pr.result) out.push({ pri: 1, text: `今日は${s.announceLabel || "合格発表"}の日です` });
   return out;
 }
+
+const addYMD = (d, y = 0, m = 0) => { const t = toD(d); t.setUTCFullYear(t.getUTCFullYear() + y, t.getUTCMonth() + m); return t.toISOString().slice(0, 10); };
+const fyEnd = (d, plus) => { const t = toD(d); const fy = t.getUTCMonth() >= 3 ? t.getUTCFullYear() : t.getUTCFullYear() - 1; return `${fy + plus + 1}-03-31`; };
+const SOON = [90, 30, 7, 0];
 
 async function main() {
   const state = await loadState();
@@ -89,7 +96,31 @@ async function main() {
       if (next) items.push({ pri: 3, text: `（テスト）次の予定：${next}`, s });
       continue;
     }
-    for (const ev of eventsFor(s)) items.push({ ...ev, s });
+    for (const ev of eventsFor(s, (state.progress || {})[s.key])) items.push({ ...ev, s });
+  }
+
+  if (!env.TEST_ALL) {
+    // 免状の更新期限（取得済みタブで設定したもの）
+    for (const [id, lic] of Object.entries(state.licenses || {})) {
+      const ex = EXAMS.find((e) => e.id === id);
+      if (!ex || !lic.renew) continue;
+      const n = diff(TODAY, lic.renew);
+      if (SOON.includes(n)) items.push({ pri: n <= 7 ? 0 : 2, text: n === 0 ? "⚠️ 今日が更新期限です" : `更新期限まであと${n}日（${md(lic.renew)}）`, s: { ex, label: "免状・更新" } });
+    }
+    // 科目合格・一部免除の期限（残りの区分がある場合）
+    for (const ex of EXAMS) {
+      const pp = passedParts[ex.id] || {};
+      if (passed[ex.id] || (ex.parts && ex.parts.every(([p]) => pp[p]))) continue;
+      for (const r of ex.credits || []) {
+        if ((r.unless || []).some((u) => pp[u])) continue;
+        for (const pid of r.parts) {
+          if (!pp[pid]) continue;
+          const until = r.fyEnd ? fyEnd(pp[pid], r.years || 0) : addYMD(pp[pid], r.years || 0, r.months || 0);
+          const n = diff(TODAY, until);
+          if ([90, 30].includes(n)) items.push({ pri: 2, text: `${pid} の合格による免除の期限が近づいています（目安 ${md(until)}、あと${n}日）`, s: { ex, label: "免除の期限" } });
+        }
+      }
+    }
   }
   console.log(`::notice::☆ ${Object.keys(stars).length}件 / 合格記録 ${Object.keys(passedParts).length + Object.keys(passed).length}件を読み込み`);
   if (!items.length) { console.log(`::notice::${TODAY}: 通知する予定はありません`); return; }

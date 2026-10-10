@@ -21,7 +21,7 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, updatedAt: 0 };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, progress: {}, licenses: {}, updatedAt: 0 };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
@@ -102,6 +102,25 @@
   }
 
   const catOn = (cat) => store.cats.length === 0 || store.cats.includes(cat);
+
+  // ---------- 検索 ----------
+  const ALIASES = {
+    denken3: "でんけん 電験 三種", denken2: "でんけん 電験 二種", denkikouji1: "でんこう 電工 一種", denkikouji2: "でんこう 電工 二種",
+    takken: "たっけん", kikenbutsu: "きけんぶつ 乙4 おつよん", shoubou: "しょうぼう", boki1: "ぼき", boki23: "ぼき",
+    fp1: "ふぁいなんしゃるぷらんなー", fp23: "ふぁいなんしゃるぷらんなー", ap: "おうよう", fe: "きほん", ip: "あいてぃーぱすぽーと",
+    sc: "しえんし せきゅりてぃ", sharoushi: "しゃろうし 社労士", shindanshi: "しんだんし", gyosei: "ぎょうせい", kangyou: "かんぎょう",
+    eisei: "えいせい", gkentei: "じーけんてい", eshikaku: "いーしかく", toeic: "とーいっく", eiken: "えいけん", bijihou: "びじほう",
+    gijutsushi: "ぎじゅつし", kenchiku: "けんちく せこうかん", doboku: "どぼく せこうかん", kankouji: "かんこうじ せこうかん", zouen: "ぞうえん", denkisekou: "でんきせこう",
+  };
+  const norm = (t) => String(t || "").normalize("NFKC").toLowerCase().replace(/[\u30a1-\u30f6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60)).replace(/\s+/g, "");
+  let query = "";
+  const hay = new Map();
+  const haystack = (ex) => {
+    if (!hay.has(ex.id)) hay.set(ex.id, norm([ex.name, ex.org, ALIASES[ex.id], ...(ex.parts || []).flat()].join(" ")));
+    return hay.get(ex.id);
+  };
+  const matchQ = (ex) => !query || query.split(/[ 　]+/).filter(Boolean).every((w) => haystack(ex).includes(norm(w)));
+  const shown = (ex) => catOn(ex.cat) && matchQ(ex);
   const isStar = (key) => !!store.stars[key];
 
   // ---------- 部品 ----------
@@ -134,7 +153,32 @@
     return t;
   }
 
-  function sessionCard(s) {
+  // 申込から結果までのチェック
+  const STEPS = [["applied", "申込"], ["paid", "入金"], ["ticket", "受験票"], ["taken", "受験"], ["result", "結果確認"]];
+  const progOf = (key) => (store.progress && store.progress[key]) || {};
+  function nextStep(s) {
+    const pr = progOf(s.key), st = statusOf(s);
+    if (!pr.applied) {
+      if (st.code === "open") return `申込をしましょう（締切 ${fmt(s.apply[1])}）`;
+      if (st.code === "before") return `申込は ${fmt(s.apply[0])} から`;
+      if (st.code === "unknown") return "申込期間を公式で確認";
+      return "";
+    }
+    if (!pr.paid) return st.code === "open" ? `受験料の支払い（締切 ${fmt(s.apply[1])}）` : "受験料の支払いを確認";
+    if (!pr.ticket && s.exam[0] >= TODAY) return diff(TODAY, s.exam[0]) <= 14 ? "受験票（会場・時間）を確認" : "受験票が届いたらチェック";
+    if (!pr.taken) return s.exam[0] > TODAY ? `試験まであと${diff(TODAY, s.exam[0])}日` : "受験したらチェック";
+    if (!pr.result) return s.announce ? (s.announce > TODAY ? `結果発表は ${fmt(s.announce)}` : "結果を確認") : "結果を確認";
+    return "完了";
+  }
+  function progressBlock(s) {
+    const pr = progOf(s.key);
+    return `<div class="progress">
+      <div class="steps-row">${STEPS.map(([k, label], i) => `<button class="step ${pr[k] ? "on" : ""}" data-step="${k}" data-key="${s.key}" title="${pr[k] ? `${label}：${pr[k]}` : label}"><span>${pr[k] ? "✓" : i + 1}</span>${label}</button>`).join("")}</div>
+      <div class="next-step">次にやること：<b>${esc(nextStep(s))}</b></div>
+    </div>`;
+  }
+
+  function sessionCard(s, opts = {}) {
     const ex = s.exam_, st = statusOf(s);
     const cd = st.n != null && st.code !== "past"
       ? `<div class="countdown ${st.code === "open" && st.n <= 7 ? "urgent" : ""}"><div class="n">${st.n === 0 ? "!" : st.n}</div><div class="u">${st.unit}</div></div>` : "";
@@ -156,6 +200,7 @@
         </dl>
         ${partChips(s)}
         ${s.detail ? `<div class="detail">${esc(s.detail)}</div>` : ""}
+        ${opts.progress ? progressBlock(s) : ""}
         ${officialLink(ex)}
       </article>`;
   }
@@ -163,7 +208,7 @@
   function simpleExamCard(ex, extra = "") {
     const key = `${ex.id}#any`;
     return `
-      <article class="card" ${catStyle(ex)}>
+      <article class="card" data-exam="${ex.id}" ${catStyle(ex)}>
         <div class="card-head">
           ${starBtn(key)}
           <div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
@@ -193,10 +238,10 @@
   // ---------- 締切が近い ----------
   let showFar = false;
   function renderDeadline() {
-    const list = SESSIONS.filter((s) => catOn(s.exam_.cat));
+    const list = SESSIONS.filter((s) => shown(s.exam_));
     const open = list.filter((s) => statusOf(s).code === "open").sort((a, b) => a.apply[1].localeCompare(b.apply[1]));
     const before = list.filter((s) => statusOf(s).code === "before").sort((a, b) => a.apply[0].localeCompare(b.apply[0]));
-    const anytime = EXAMS.filter((e) => !hasSessions(e) && catOn(e.cat) && !isPassed(e));
+    const anytime = EXAMS.filter((e) => !hasSessions(e) && shown(e) && !isPassed(e));
 
     let h = `<h2 class="section-title">いま申込できる（締切が近い順）</h2>`;
     h += open.length ? open.map(sessionCard).join("") : `<div class="empty">受付中の試験はありません</div>`;
@@ -221,7 +266,7 @@
     let h = "";
     for (const [k, c] of Object.entries(CATS)) {
       if (!catOn(k)) continue;
-      const exams = EXAMS.filter((e) => e.cat === k && !isPassed(e));
+      const exams = EXAMS.filter((e) => e.cat === k && !isPassed(e) && matchQ(e));
       if (!exams.length) continue;
       h += `<h2 class="section-title">${esc(c.label)}</h2>`;
       for (const ex of exams) {
@@ -230,7 +275,7 @@
         const past = ss.filter((s) => statusOf(s).code === "past");
         const visible = showPast.has(ex.id) ? ss : ss.filter((s) => statusOf(s).code !== "past");
         h += `
-          <article class="card" ${catStyle(ex)}>
+          <article class="card" id="ex-${ex.id}" ${catStyle(ex)}>
             <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div></div>
             <p class="note">${esc(noteOf(ex))}</p>
             <div class="note">受験料：${esc(feeText(ex))}${ex.feeNote ? `（${esc(ex.feeNote)}）` : ""}</div>
@@ -254,7 +299,7 @@
           </article>`;
       }
     }
-    document.getElementById("view-list").innerHTML = h || `<div class="empty">該当する資格がありません</div>`;
+    document.getElementById("view-list").innerHTML = h || `<div class="empty">該当する資格がありません${query ? `（「${esc(query)}」で検索中）` : ""}</div>`;
   }
 
   // ---------- カレンダー ----------
@@ -266,7 +311,7 @@
     const map = {};
     const add = (d, ev) => (map[d] ||= []).push(ev);
     for (const s of SESSIONS) {
-      if (!catOn(s.exam_.cat)) continue;
+      if (!shown(s.exam_)) continue;
       if (calStarOnly && !isStar(s.key)) continue;
       const base = { s, color: CATS[s.exam_.cat].color };
       if (s.apply) {
@@ -344,9 +389,8 @@
     const examIds = [...new Set([...starredSessions.map((s) => s.exam_.id), ...starredAny.map((e) => e.id)])];
     document.getElementById("planCount").textContent = starredSessions.length + starredAny.length || "";
 
-    const passedHtml = passedSection();
     if (!examIds.length) {
-      document.getElementById("view-plan").innerHTML = passedHtml + `<div class="empty">☆を付けた試験がここに並びます。<br>「締切が近い」や「一覧」で受けたい回の☆を押してください。</div>`;
+      document.getElementById("view-plan").innerHTML = `<div class="empty">☆を付けた試験がここに並びます。<br>「締切が近い」や「一覧」で受けたい回の☆を押してください。</div>`;
       return;
     }
     const nextDate = (s) => { const st = statusOf(s); return st.code === "before" ? s.apply[0] : st.code === "open" ? s.apply[1] : s.exam[0]; };
@@ -358,7 +402,7 @@
     </div>`;
     h += feeSummary(upcoming);
     h += `<h2 class="section-title">これからの予定</h2>`;
-    h += upcoming.length ? upcoming.map(sessionCard).join("") : `<div class="empty">今後の予定はありません</div>`;
+    h += upcoming.length ? upcoming.map((s) => sessionCard(s, { progress: true })).join("") : `<div class="empty">今後の予定はありません</div>`;
     if (starredAny.length) {
       h += `<h2 class="section-title">随時・地域ごとの試験</h2>` + starredAny.map((e) => simpleExamCard(e)).join("");
     }
@@ -368,8 +412,8 @@
       h += `<article class="card" ${catStyle(ex)}><div class="card-title"><h3>${esc(ex.name)}</h3></div>
         <textarea class="memo" data-memo="${id}" placeholder="教材、勉強の進み具合、受験料など">${esc(store.memo[id] || "")}</textarea></article>`;
     }
-    if (past.length) h += `<h2 class="section-title">終了した回</h2>` + past.map(sessionCard).join("");
-    document.getElementById("view-plan").innerHTML = h + passedHtml;
+    if (past.length) h += `<h2 class="section-title">終了した回</h2>` + past.map((s) => sessionCard(s, { progress: true })).join("");
+    document.getElementById("view-plan").innerHTML = h;
   }
 
   // ☆を付けたこれからの回の受験料合計
@@ -396,22 +440,80 @@
       </div>`;
   }
 
-  function passedSection() {
-    const list = EXAMS.filter((ex) => (store.passed && store.passed[ex.id]) || Object.keys(passedPartsOf(ex)).length);
-    if (!list.length) return "";
+  // ---------- 取得済み：合格の記録・免状・期限 ----------
+  const addYMD = (d, y = 0, m = 0) => { const t = toD(d); t.setUTCFullYear(t.getUTCFullYear() + y, t.getUTCMonth() + m); return toS(t); };
+  const fyEnd = (d, plusYears) => { const t = toD(d); const fy = t.getUTCMonth() >= 3 ? t.getUTCFullYear() : t.getUTCFullYear() - 1; return `${fy + plusYears + 1}-03-31`; };
+  const passDateOf = (ex, part) => (part ? passedPartsOf(ex)[part] : store.passed[ex.id]) || "";
+  const hasRecord = (ex) => !!store.passed[ex.id] || Object.keys(passedPartsOf(ex)).length > 0;
+  const licOf = (id) => (store.licenses && store.licenses[id]) || {};
+
+  // 科目合格・一部免除などの期限（まだ残りの区分がある場合だけ）
+  function creditItems() {
+    const out = [];
+    for (const ex of EXAMS) {
+      for (const r of ex.credits || []) {
+        if (isPassed(ex)) continue;
+        const done = passedPartsOf(ex);
+        if ((r.unless || []).some((u) => done[u])) continue;
+        for (const pid of r.parts) {
+          const d = done[pid];
+          if (!d) continue;
+          const until = r.fyEnd ? fyEnd(d, r.years || 0) : addYMD(d, r.years || 0, r.months || 0);
+          out.push({ ex, pid, since: d, until, text: r.text, n: diff(TODAY, until) });
+        }
+      }
+    }
+    return out.sort((a, b) => a.until.localeCompare(b.until));
+  }
+  function renewItems() {
+    return EXAMS.filter((ex) => hasRecord(ex) && licOf(ex.id).renew).map((ex) => ({ ex, until: licOf(ex.id).renew, n: diff(TODAY, licOf(ex.id).renew) }))
+      .sort((a, b) => a.until.localeCompare(b.until));
+  }
+
+  function renderHave() {
+    const list = EXAMS.filter(hasRecord);
     const latest = (ex) => store.passed[ex.id] || Object.values(passedPartsOf(ex)).sort().pop() || "";
     list.sort((a, b) => latest(b).localeCompare(latest(a)));
-    return `<h2 class="section-title">合格の記録</h2>
-      <div class="card passed-list">${list.map((ex) => {
-        const parts = ex.parts ? Object.keys(passedPartsOf(ex)) : [];
-        const all = isPassed(ex);
-        return `<div class="passed-row">
-          <span class="dot" style="background:${CATS[ex.cat].color}"></span>
-          <span class="passed-name">${esc(ex.name)}
-            <small>${ex.parts ? (all ? "全区分合格（表示から外しています）" : parts.map((id) => esc(partName(ex, id))).join("・") + " 合格") : "合格済み（表示から外しています）"}</small></span>
-          ${ex.parts ? `<button class="btn ghost small" data-passparts="${ex.id}">編集</button>` : `<button class="btn ghost small" data-unpass="${ex.id}">戻す</button>`}
-        </div>`;
-      }).join("")}</div>`;
+    document.getElementById("haveCount").textContent = list.length || "";
+    if (!list.length) {
+      document.getElementById("view-have").innerHTML = `<div class="empty">合格した資格がここに並びます。<br>各カードの「✓ 合格済みにする」「✓ 合格を記録」から登録してください。</div>`;
+      return;
+    }
+    const credits = creditItems(), renews = renewItems();
+    let h = "";
+    const deadlines = [
+      ...credits.map((c) => ({ until: c.until, n: c.n, title: `${c.ex.name}：${partName(c.ex, c.pid)}`, text: c.text, approx: true })),
+      ...renews.map((r) => ({ until: r.until, n: r.n, title: `${r.ex.name}：更新・講習`, text: (r.ex.renewal && r.ex.renewal.text) || "設定した更新期限" })),
+    ].sort((a, b) => a.until.localeCompare(b.until));
+    if (deadlines.length) {
+      h += `<h2 class="section-title">期限</h2><div class="card deadline-list">${deadlines.map((d) => `
+        <div class="dl-row ${d.n < 0 ? "expired" : d.n <= 90 ? "soon" : ""}">
+          <div class="dl-main"><b>${esc(d.title)}</b><span>${esc(d.text)}</span></div>
+          <div class="dl-date">${d.approx ? "目安 " : ""}${fmt(d.until, true)}<small>${d.n < 0 ? "期限切れ" : `あと${d.n}日`}</small></div>
+        </div>`).join("")}</div>`;
+    }
+    h += `<h2 class="section-title">合格・取得の記録</h2>`;
+    h += list.map((ex) => {
+      const lic = licOf(ex.id);
+      const parts = ex.parts ? ex.parts.filter(([pid]) => passedPartsOf(ex)[pid]) : [];
+      const firstDate = latest(ex);
+      const suggest = ex.renewal && firstDate ? addYMD(firstDate, ex.renewal.years) : "";
+      return `<article class="card have-card" ${catStyle(ex)}>
+        <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
+          ${ex.parts ? `<button class="btn ghost small" data-passparts="${ex.id}">区分を編集</button>` : `<button class="btn ghost small" data-unpass="${ex.id}">記録を消す</button>`}</div>
+        <dl class="rows">
+          ${ex.parts
+            ? parts.map(([pid, label]) => `<dt>${esc(label)}</dt><dd>${fmt(passedPartsOf(ex)[pid], true)} 合格</dd>`).join("") + (isPassed(ex) ? "" : `<dt>残り</dt><dd class="muted">${ex.parts.filter(([pid]) => !passedPartsOf(ex)[pid]).map(([, l]) => esc(l)).join("・")}</dd>`)
+            : `<dt>合格日</dt><dd><input type="date" class="mini-input" data-passdate="${ex.id}" value="${esc(store.passed[ex.id])}"></dd>`}
+          <dt>免状・登録番号</dt><dd><input class="mini-input wide" data-lic="${ex.id}" data-field="number" value="${esc(lic.number || "")}" placeholder="例：第12345号"></dd>
+          <dt>更新期限</dt><dd><input type="date" class="mini-input" data-lic="${ex.id}" data-field="renew" value="${esc(lic.renew || "")}">
+            ${suggest && !lic.renew ? `<button class="btn ghost small" data-setrenew="${ex.id}" data-date="${suggest}">目安 ${fmt(suggest, true)} を設定</button>` : ""}</dd>
+        </dl>
+        ${ex.renewal ? `<div class="detail">更新の目安：${esc(ex.renewal.text)}</div>` : ""}
+        <textarea class="memo" data-licmemo="${ex.id}" placeholder="交付日、講習の受講記録など">${esc(lic.memo || "")}</textarea>
+      </article>`;
+    }).join("");
+    document.getElementById("view-have").innerHTML = h;
   }
 
   // 区分ごとの合格を記録するダイアログ
@@ -422,8 +524,9 @@
     const done = passedPartsOf(ex);
     document.getElementById("passTitle").textContent = `${ex.name} の合格を記録`;
     document.getElementById("passBody").innerHTML = `
-      <p class="hint">合格した区分にチェックしてください。その区分しかない回は表示から外れます。すべてにチェックすると資格ごと表示から外れます。${ex.partsNote ? `<br>${esc(ex.partsNote)}` : ""}</p>
-      <div class="part-grid">${ex.parts.map(([pid, label]) => `<label class="part-check"><input type="checkbox" value="${esc(pid)}" ${done[pid] ? "checked" : ""}><span>${esc(label)}</span></label>`).join("")}</div>
+      <p class="hint">合格した区分にチェックして、合格日を入れてください。その区分しかない回は表示から外れます。すべてにチェックすると資格ごと表示から外れます。${ex.partsNote ? `<br>${esc(ex.partsNote)}` : ""}</p>
+      <div class="part-list">${ex.parts.map(([pid, label]) => `<div class="part-line"><label class="part-check"><input type="checkbox" value="${esc(pid)}" ${done[pid] ? "checked" : ""}><span>${esc(label)}</span></label>
+        <input type="date" class="mini-input" data-pd="${esc(pid)}" value="${esc(done[pid] || TODAY)}" title="合格日"></div>`).join("")}</div>
       <div class="plan-actions" style="margin-top:14px"><button class="btn" id="passSave">保存</button><button class="btn ghost" id="passCancel">キャンセル</button></div>`;
     document.getElementById("passDlg").showModal();
   }
@@ -432,7 +535,11 @@
     const before = JSON.stringify(passedPartsOf(ex));
     const prev = passedPartsOf(ex);
     const next = {};
-    document.querySelectorAll("#passBody input[type=checkbox]").forEach((c) => { if (c.checked) next[c.value] = prev[c.value] || TODAY; });
+    document.querySelectorAll("#passBody input[type=checkbox]").forEach((c) => {
+      if (!c.checked) return;
+      const di = [...document.querySelectorAll("#passBody input[data-pd]")].find((x) => x.dataset.pd === c.value);
+      next[c.value] = (di && di.value) || prev[c.value] || TODAY;
+    });
     if (Object.keys(next).length) store.passedParts[ex.id] = next; else delete store.passedParts[ex.id];
     document.getElementById("passDlg").close();
     save(); rebuild(); renderAll();
@@ -487,7 +594,7 @@
   const SYNC_KEY = "shikaku-schedule:sync";
   const GIST_DESC = "shikaku-schedule state";
   const GIST_FILE = "state.json";
-  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "pref", "updatedAt"];
+  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "progress", "licenses", "pref", "updatedAt"];
   let sync = {};
   try { sync = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}"); } catch (e) { /* 無視 */ }
   const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) { /* 無視 */ } };
@@ -610,15 +717,76 @@
     setSyncStatus(syncStatus);
   }
 
+  // ---------- ルート：年間ロードマップと系統図 ----------
+  function nodeInfo(ref) {
+    const [id, pid] = ref.split(":");
+    const ex = EXAMS.find((e) => e.id === id);
+    let short = ex.name.replace(/（.*?）/g, "").replace(/試験$/, "");
+    if (pid) short = short.replace(/\s*[0-9０-９]級(・[0-9０-９]級)*$/, "");
+    const label = pid ? `${short} ${pid}` : short;
+    const passed = pid ? !!passedPartsOf(ex)[pid] : isPassed(ex);
+    const starred = ALL_SESSIONS.some((s) => s.exam_ === ex && isStar(s.key) && !sessionDone(s) && statusOf(s).code !== "past" && (!pid || sessionParts(s).includes(pid))) || isStar(`${ex.id}#any`);
+    return { ex, label, passed, starred };
+  }
+  function renderRoute() {
+    // 年間ロードマップ
+    const start = `${TODAY.slice(0, 7)}-01`;
+    const end = addYMD(start, 1, 0);
+    const span = diff(start, end);
+    const pos = (d) => Math.max(0, Math.min(100, (diff(start, d) / span) * 100));
+    const rows = ALL_SESSIONS.filter((s) => isStar(s.key) && !sessionDone(s) && s.exam[1] >= TODAY && s.exam[0] < end)
+      .sort((a, b) => a.exam[0].localeCompare(b.exam[0]));
+    const warn = new Map();
+    for (let i = 1; i < rows.length; i++) {
+      const gap = diff(rows[i - 1].exam[1], rows[i].exam[0]);
+      if (gap <= 14) {
+        const msg = gap <= 0 ? "試験期間が重なっています" : `前の試験と${gap}日しか空いていません`;
+        warn.set(rows[i].key, msg);
+        if (!warn.has(rows[i - 1].key)) warn.set(rows[i - 1].key, "次の試験と近い");
+      }
+    }
+    const months = [];
+    for (let i = 0; i < 12; i++) months.push(addYMD(start, 0, i));
+    let h = `<h2 class="section-title">年間ロードマップ（☆を付けた回）</h2>`;
+    if (!rows.length) h += `<div class="empty">☆を付けた試験がここに1年分並びます</div>`;
+    else {
+      h += `<div class="card roadmap"><div class="rm-scroll"><div class="rm-inner">
+        <div class="rm-months">${months.map((m) => `<span style="left:${pos(m)}%">${Number(m.slice(5, 7))}月</span>`).join("")}</div>
+        <div class="rm-today" style="left:${pos(TODAY)}%"></div>
+        ${rows.map((s) => {
+          const c = CATS[s.exam_.cat].color, w = warn.get(s.key);
+          const ap = s.apply && s.apply[1] >= start ? `<i class="rm-apply" style="left:${pos(s.apply[0])}%;width:${Math.max(0.6, pos(s.apply[1]) - pos(s.apply[0]))}%;--c:${c}" title="申込 ${fmtRange(s.apply)}"></i>` : "";
+          const exb = `<i class="rm-exam" style="left:${pos(s.exam[0])}%;width:${Math.max(1.2, pos(s.exam[1]) - pos(s.exam[0]))}%;--c:${c}" title="試験 ${fmtRange(s.exam)}"></i>`;
+          return `<div class="rm-row ${w ? "warn" : ""}"><div class="rm-label">${esc(s.exam_.name.replace(/（.*?）/g, ""))}<small>${esc(s.label)} ・ 試験 ${fmtRange(s.exam)}${w ? ` ・ ⚠ ${esc(w)}` : ""}</small></div><div class="rm-track">${ap}${exb}</div></div>`;
+        }).join("")}
+      </div></div>
+      <div class="legend rm-legend"><span><i class="rm-key apply"></i>申込期間</span><span><i class="rm-key exam"></i>試験</span><span><i class="rm-key today"></i>今日</span></div></div>`;
+      const ws = rows.filter((s) => warn.get(s.key) && warn.get(s.key) !== "次の試験と近い");
+      if (ws.length) h += `<div class="warn-box">⚠ 試験の間隔が2週間以内のところがあります：${ws.map((s) => esc(s.exam_.name.replace(/（.*?）/g, ""))).join("、")}</div>`;
+    }
+    // 系統図
+    h += `<h2 class="section-title">資格のつながり</h2><p class="hint">✓ 合格済み　★ 受験予定　名前を押すと一覧のその資格に移動します。</p>`;
+    h += (window.ROUTES || []).map((r) => `<article class="card route-card"><h3>${esc(r.title)}</h3>
+      ${r.edges.map(([a, b, note]) => {
+        const A = nodeInfo(a), B = nodeInfo(b);
+        const node = (n) => `<button class="node ${n.passed ? "passed" : ""} ${n.starred ? "starred" : ""}" data-goto="${n.ex.id}" style="--c:${CATS[n.ex.cat].color}">${n.passed ? "✓ " : n.starred ? "★ " : ""}${esc(n.label)}</button>`;
+        return `<div class="edge">${node(A)}<span class="arrow">→</span>${node(B)}${note ? `<div class="edge-note">${esc(note)}</div>` : ""}</div>`;
+      }).join("")}</article>`).join("");
+    document.getElementById("view-route").innerHTML = h;
+  }
+
+  const VIEWS = ["deadline", "list", "calendar", "route", "plan", "have"];
   // ---------- 全体 ----------
   function renderAll() {
-    renderFilters(); renderDeadline(); renderList(); renderCalendar(); renderPlan();
+    renderFilters(); renderDeadline(); renderList(); renderCalendar(); renderPlan(); renderRoute(); renderHave();
   }
 
   function setView(v) {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("is-active", t.dataset.view === v));
     document.querySelectorAll(".view").forEach((s) => s.classList.toggle("is-active", s.id === `view-${v}`));
-    document.getElementById("filters").style.display = v === "plan" ? "none" : "";
+    const browse = ["deadline", "list", "calendar"].includes(v);
+    document.getElementById("filters").style.display = browse ? "" : "none";
+    document.getElementById("searchbar").style.display = browse ? "" : "none";
     if (location.hash.slice(1) !== v) history.replaceState(null, "", `#${v}`);
   }
 
@@ -647,6 +815,32 @@
       return;
     }
     if (t.dataset.passparts) { openPassDialog(t.dataset.passparts); return; }
+    if (t.dataset.step) {
+      const k = t.dataset.key, st = t.dataset.step;
+      store.progress[k] = { ...progOf(k) };
+      if (store.progress[k][st]) delete store.progress[k][st];
+      else {
+        // 前の段階もまとめてチェック
+        for (const [sk] of STEPS) { if (!store.progress[k][sk]) store.progress[k][sk] = TODAY; if (sk === st) break; }
+      }
+      if (!Object.keys(store.progress[k]).length) delete store.progress[k];
+      save(); renderPlan(); return;
+    }
+    if (t.dataset.goto) {
+      const id = t.dataset.goto;
+      query = ""; const qi = document.getElementById("q"); if (qi) qi.value = "";
+      if (store.cats.length && !store.cats.includes(EXAMS.find((e) => e.id === id).cat)) { store.cats = []; save(false); }
+      renderAll(); setView("list");
+      const el = document.getElementById(`ex-${id}`) || document.querySelector(`[data-exam="${id}"]`);
+      if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600); }
+      else toast("この資格は合格済みのため一覧に表示されていません");
+      return;
+    }
+    if (t.dataset.setrenew) {
+      const id = t.dataset.setrenew;
+      store.licenses[id] = { ...licOf(id), renew: t.dataset.date };
+      save(); renderHave(); return;
+    }
     if (t.id === "passSave") { savePassDialog(); return; }
     if (t.id === "passCancel") { document.getElementById("passDlg").close(); return; }
     if (t.id === "toastUndo") {
@@ -690,17 +884,33 @@
 
   window.addEventListener("hashchange", () => {
     const v = location.hash.slice(1);
-    if (["deadline", "list", "calendar", "plan"].includes(v)) setView(v);
+    if (VIEWS.includes(v)) setView(v);
   });
 
   document.addEventListener("change", (e) => {
     if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
     if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
+    if (e.target.dataset && e.target.dataset.lic) {
+      const id = e.target.dataset.lic, f = e.target.dataset.field;
+      store.licenses[id] = { ...licOf(id), [f]: e.target.value };
+      if (!store.licenses[id][f]) delete store.licenses[id][f];
+      save(); if (f === "renew") renderHave(); return;
+    }
+    if (e.target.dataset && e.target.dataset.passdate) {
+      if (e.target.value) { store.passed[e.target.dataset.passdate] = e.target.value; save(); renderHave(); }
+      return;
+    }
     if (e.target.id === "calStar") { calStarOnly = e.target.checked; renderCalendar(); }
   });
   document.addEventListener("input", (e) => {
     const id = e.target.dataset && e.target.dataset.memo;
-    if (id) { store.memo[id] = e.target.value; save(); }
+    if (id) { store.memo[id] = e.target.value; save(); return; }
+    const lm = e.target.dataset && e.target.dataset.licmemo;
+    if (lm) { store.licenses[lm] = { ...licOf(lm), memo: e.target.value }; save(); return; }
+    if (e.target.id === "q") {
+      query = e.target.value.trim();
+      renderDeadline(); renderList(); renderCalendar();
+    }
   });
 
   document.getElementById("today").textContent = `今日 ${fmt(TODAY, true)}`;
@@ -712,5 +922,5 @@
   if (sync.gistId) pull();
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pull(); });
   const initial = location.hash.slice(1);
-  setView(["deadline", "list", "calendar", "plan"].includes(initial) ? initial : "deadline");
+  setView(VIEWS.includes(initial) ? initial : "deadline");
 })();

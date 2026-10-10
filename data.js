@@ -32,6 +32,7 @@ window.EXAMS = [
   {
     id: "sc", name: "情報処理安全確保支援士試験（SC）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    renewal: { years: 3, text: "登録した場合、3年ごとに登録の更新（講習の受講）が必要" },
     fees: [{ label: "", yen: 7500 }],
     note: "CBT方式。前期・後期の年2回。",
     sessions: [
@@ -84,6 +85,7 @@ window.EXAMS = [
   {
     id: "aws", name: "AWS認定", cat: "it", org: "Amazon Web Services", anytime: true,
     url: "https://aws.amazon.com/jp/certification/",
+    renewal: { years: 3, text: "AWS認定の有効期間は3年" },
     note: "ピアソンVUEのテストセンター／オンラインで通年受験可能。", sessions: [],
   },
 
@@ -136,6 +138,7 @@ window.EXAMS = [
   {
     id: "fp23", name: "FP技能検定 2級・3級", cat: "money", org: "きんざい／日本FP協会", anytime: true,
     url: "https://www.jafp.or.jp/exam/",
+    credits: [{ parts: ["2級学科"], unless: ["2級実技"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }, { parts: ["2級実技"], unless: ["2級学科"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }, { parts: ["3級学科"], unless: ["3級実技"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }, { parts: ["3級実技"], unless: ["3級学科"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }],
     parts: [["2級学科","2級 学科"],["2級実技","2級 実技"],["3級学科","3級 学科"],["3級実技","3級 実技"]],
     fees: [{ label: "2級 学科＋実技", yen: 11700 }, { label: "3級 学科＋実技", yen: 8000 }, { label: "2級 学科のみ", yen: 5700 }, { label: "3級 学科のみ", yen: 4000 }],
     note: "CBT方式で通年実施（休止期間あり。年度末の3月下旬〜、年末年始など）。", sessions: [],
@@ -143,6 +146,7 @@ window.EXAMS = [
   {
     id: "takken", name: "宅地建物取引士（宅建）", cat: "law", org: "不動産適正取引推進機構",
     url: "https://www.retio.or.jp/exam/",
+    renewal: { years: 5, text: "宅建士証の有効期限は5年。更新には法定講習の受講が必要（登録・交付した場合）" },
     fees: [{ label: "", yen: 8200 }],
     note: "年1回・10月第3日曜が通例。申込は例年7月（ネット7/1〜7/31、郵送7/1〜7/15）。",
     sessions: [
@@ -185,6 +189,7 @@ window.EXAMS = [
   {
     id: "denken3", name: "第三種電気主任技術者（電験三種）", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/",
+    credits: [{ parts: ["理論", "電力", "機械", "法規"], years: 3, text: "科目合格は約3年間（連続5回の試験）有効" }],
     parts: [["理論","理論"],["電力","電力"],["機械","機械"],["法規","法規"]], partsNote: "科目合格は3年間有効",
     fees: [{ label: "", yen: 7700 }],
     note: "上期・下期の年2回。CBT方式か筆記方式を選択。",
@@ -196,6 +201,7 @@ window.EXAMS = [
   {
     id: "kikenbutsu", name: "危険物取扱者（甲・乙・丙）", cat: "tech", org: "消防試験研究センター", regional: true,
     url: "https://shinsei.shoubo-shiken.or.jp/shoubou_ia/iajs9001.do?menjo_kbn=1",
+    renewal: { years: 3, text: "危険物の取扱作業に従事している場合、保安講習を原則3年以内ごとに受講" },
     parts: [["甲","甲種"],["乙1","乙種1類"],["乙2","乙種2類"],["乙3","乙種3類"],["乙4","乙種4類"],["乙5","乙種5類"],["乙6","乙種6類"],["丙","丙種"]],
     fees: [{ label: "乙種", yen: 5300 }, { label: "甲種", yen: 7200 }, { label: "丙種", yen: 4200 }], feeNote: "2024年5月改定後の標準額。都道府県の条例で決まるため受験地で確認",
     note: "都道府県ごとに年数回〜毎月実施。選んだ受験地の日程を表示します（公式の全国日程から毎日自動取り込み）。",
@@ -213,6 +219,7 @@ window.EXAMS = [
   {
     id: "shoubou", name: "消防設備士（甲・乙）", cat: "tech", org: "消防試験研究センター", regional: true,
     url: "https://shinsei.shoubo-shiken.or.jp/shoubou_ia/iajs9001.do?menjo_kbn=2",
+    renewal: { years: 2, text: "免状交付後最初の4月1日から2年以内に講習、その後は5年以内ごと" },
     parts: [["甲特","甲種特類"],["甲1","甲種1類"],["甲2","甲種2類"],["甲3","甲種3類"],["甲4","甲種4類"],["甲5","甲種5類"],["乙1","乙種1類"],["乙2","乙種2類"],["乙3","乙種3類"],["乙4","乙種4類"],["乙5","乙種5類"],["乙6","乙種6類"],["乙7","乙種7類"]],
     fees: [{ label: "乙種", yen: 4400 }, { label: "甲種", yen: 6600 }], feeNote: "2024年5月改定後の標準額。受験地で確認",
     note: "都道府県ごとに実施。選んだ受験地の日程を表示します（公式の全国日程から毎日自動取り込み）。",
@@ -224,6 +231,7 @@ window.EXAMS = [
   {
     id: "kenchiku", name: "建築施工管理技士", cat: "tech", org: "建設業振興基金",
     url: "https://www.fcip-shiken.jp/",
+    renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。来年度の申込は例年1級が1〜2月、2級（前期）が2〜3月頃。",
     sessions: [
@@ -234,6 +242,7 @@ window.EXAMS = [
   {
     id: "doboku", name: "土木施工管理技士", cat: "tech", org: "全国建設研修センター",
     url: "https://www.jctc.jp/",
+    renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。",
     sessions: [
@@ -244,6 +253,7 @@ window.EXAMS = [
   {
     id: "kankouji", name: "管工事施工管理技士", cat: "tech", org: "全国建設研修センター",
     url: "https://www.jctc.jp/",
+    renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。",
     sessions: [
@@ -254,6 +264,7 @@ window.EXAMS = [
   {
     id: "zouen", name: "造園施工管理技士", cat: "tech", org: "全国建設研修センター",
     url: "https://www.jctc.jp/",
+    renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。",
     sessions: [
@@ -265,6 +276,7 @@ window.EXAMS = [
   {
     id: "denkikouji2", name: "第二種電気工事士", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/construction/second/",
+    credits: [{ parts: ["学科"], unless: ["技能"], months: 6, text: "学科合格（または免除）で、次回の試験は学科免除・技能のみ" }],
     parts: [["学科", "学科試験"], ["技能", "技能試験"]],
     fees: [{ label: "", yen: 11100 }], feeNote: "別途、事務手数料あり",
     note: "上期・下期の年2回。学科はCBTか筆記を選択。学科に合格した回の翌回は学科免除で技能だけ受けられる。上期の申込は例年3月。",
@@ -278,6 +290,8 @@ window.EXAMS = [
   {
     id: "denkikouji1", name: "第一種電気工事士", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/construction/first/",
+    renewal: { years: 5, text: "免状の交付後、5年以内ごとに定期講習の受講が必要" },
+    credits: [{ parts: ["学科"], unless: ["技能"], months: 6, text: "学科合格で、次回の試験は学科免除・技能のみ" }],
     parts: [["学科", "学科試験"], ["技能", "技能試験"]],
     fees: [{ label: "", yen: 13000 }],
     note: "上期・下期の年2回。上期の申込は例年2月、下期は7〜8月。",
@@ -291,6 +305,7 @@ window.EXAMS = [
   {
     id: "denken2", name: "第二種電気主任技術者（電験二種）", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/",
+    credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "一次試験の合格で、その年度と翌年度の二次試験は一次免除" }],
     parts: [["一次", "一次試験"], ["二次", "二次試験"]], partsNote: "一次試験は科目合格制（理論・電力・機械・法規、3年間有効）",
     fees: [{ label: "インターネット申込", yen: 13800 }], feeNote: "令和7年度の金額",
     note: "年1回。申込は例年5〜6月、一次は8月下旬（電験三種上期の筆記と同日）、二次は11月。",
@@ -302,6 +317,7 @@ window.EXAMS = [
   {
     id: "denkisekou", name: "電気工事施工管理技士", cat: "tech", org: "建設業振興基金",
     url: "https://www.fcip-shiken.jp/",
+    renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次", "1級 第一次検定"], ["1級二次", "1級 第二次検定"], ["2級一次", "2級 第一次検定"], ["2級二次", "2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。1級の申込は例年2月（一次のみは4月上旬まで）。2級の日程は公式で確認。",
     sessions: [
@@ -363,6 +379,7 @@ window.EXAMS = [
   {
     id: "shindanshi", name: "中小企業診断士", cat: "law", org: "中小企業診断協会",
     url: "https://www.j-smeca.jp/",
+    credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "第1次試験の合格で、その年度と翌年度の第2次試験を受験できる" }],
     parts: [["一次", "第1次試験"], ["二次", "第2次試験（筆記）"]], partsNote: "第1次は科目合格制。2026年度から第2次の口述試験は廃止",
     fees: [{ label: "第1次試験", yen: 17200 }, { label: "第2次試験", yen: 15100 }],
     note: "第1次は8月上旬、第2次（筆記）は10月下旬。申込はインターネットのみ。",
