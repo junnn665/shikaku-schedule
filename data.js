@@ -11,6 +11,7 @@ window.CATEGORIES = {
   money: { label: "簿記・会計・金融", color: "#059669" },
   lang: { label: "語学", color: "#db2777" },
   tech: { label: "技術・設備", color: "#d97706" },
+  law: { label: "法律・不動産・経営", color: "#0891b2" },
   biz: { label: "ビジネス・AI", color: "#7c3aed" },
 };
 
@@ -86,6 +87,14 @@ window.EXAMS = [
     note: "ピアソンVUEのテストセンター／オンラインで通年受験可能。", sessions: [],
   },
 
+  {
+    id: "mos", name: "MOS（Microsoft Office Specialist）", cat: "it", org: "オデッセイコミュニケーションズ", anytime: true,
+    url: "https://mos.odyssey-com.co.jp/",
+    note: "全国一斉試験（毎月）と随時試験（各試験会場）がある。Word・Excel・PowerPoint など科目ごと。",
+    parts: [["Word", "Word"], ["Excel", "Excel"], ["PowerPoint", "PowerPoint"], ["Excelエキスパート", "Excel エキスパート"], ["Wordエキスパート", "Word エキスパート"]],
+    sessions: [],
+  },
+
   // ───────── 簿記・会計・金融 ─────────
   {
     id: "boki1", name: "日商簿記検定 1級", cat: "money", org: "日本商工会議所",
@@ -132,7 +141,7 @@ window.EXAMS = [
     note: "CBT方式で通年実施（休止期間あり。年度末の3月下旬〜、年末年始など）。", sessions: [],
   },
   {
-    id: "takken", name: "宅地建物取引士（宅建）", cat: "money", org: "不動産適正取引推進機構",
+    id: "takken", name: "宅地建物取引士（宅建）", cat: "law", org: "不動産適正取引推進機構",
     url: "https://www.retio.or.jp/exam/",
     fees: [{ label: "", yen: 8200 }],
     note: "年1回・10月第3日曜が通例。申込は例年7月（ネット7/1〜7/31、郵送7/1〜7/15）。",
@@ -254,6 +263,71 @@ window.EXAMS = [
   },
 
   {
+    id: "denkikouji2", name: "第二種電気工事士", cat: "tech", org: "電気技術者試験センター",
+    url: "https://www.shiken.or.jp/construction/second/",
+    parts: [["学科", "学科試験"], ["技能", "技能試験"]],
+    fees: [{ label: "", yen: 11100 }], feeNote: "別途、事務手数料あり",
+    note: "上期・下期の年2回。学科はCBTか筆記を選択。学科に合格した回の翌回は学科免除で技能だけ受けられる。上期の申込は例年3月。",
+    sessions: [
+      { label: "令和8年度 下期 学科", parts: ["学科"], apply: ["2026-08-17", "2026-09-03"], exam: ["2026-09-24", "2026-11-08"],
+        detail: "CBT 9/24〜11/8 ／ 筆記 10/25" },
+      { label: "令和8年度 下期 技能", parts: ["技能"], apply: ["2026-08-17", "2026-09-03"], exam: ["2026-12-12", "2026-12-13"],
+        detail: "学科合格者・学科免除者が対象" },
+    ],
+  },
+  {
+    id: "denkikouji1", name: "第一種電気工事士", cat: "tech", org: "電気技術者試験センター",
+    url: "https://www.shiken.or.jp/construction/first/",
+    parts: [["学科", "学科試験"], ["技能", "技能試験"]],
+    fees: [{ label: "", yen: 13000 }],
+    note: "上期・下期の年2回。上期の申込は例年2月、下期は7〜8月。",
+    sessions: [
+      { label: "令和8年度 下期 学科", parts: ["学科"], apply: ["2026-07-27", "2026-08-13"], exam: ["2026-09-11", "2026-10-18"], announce: "2026-11-02",
+        detail: "CBT 9/11〜10/18 ／ 筆記 10/4" },
+      { label: "令和8年度 下期 技能", parts: ["技能"], apply: ["2026-07-27", "2026-08-13"], exam: ["2026-11-21", "2026-11-21"], announce: "2026-12-11",
+        detail: "学科合格者・学科免除者が対象" },
+    ],
+  },
+  {
+    id: "denken2", name: "第二種電気主任技術者（電験二種）", cat: "tech", org: "電気技術者試験センター",
+    url: "https://www.shiken.or.jp/",
+    parts: [["一次", "一次試験"], ["二次", "二次試験"]], partsNote: "一次試験は科目合格制（理論・電力・機械・法規、3年間有効）",
+    fees: [{ label: "インターネット申込", yen: 13800 }], feeNote: "令和7年度の金額",
+    note: "年1回。申込は例年5〜6月、一次は8月下旬（電験三種上期の筆記と同日）、二次は11月。",
+    sessions: [
+      { label: "令和8年度 二次試験", parts: ["二次"], apply: ["2026-05-18", "2026-06-04"], exam: ["2026-11-15", "2026-11-15"], announceText: "2027年1月下旬（例年）",
+        detail: "一次試験（8/30）の合格者・一次免除者が対象" },
+    ],
+  },
+  {
+    id: "denkisekou", name: "電気工事施工管理技士", cat: "tech", org: "建設業振興基金",
+    url: "https://www.fcip-shiken.jp/",
+    parts: [["1級一次", "1級 第一次検定"], ["1級二次", "1級 第二次検定"], ["2級一次", "2級 第一次検定"], ["2級二次", "2級 第二次検定"]],
+    note: "令和8年度の申込は受付終了。1級の申込は例年2月（一次のみは4月上旬まで）。2級の日程は公式で確認。",
+    sessions: [
+      { label: "1級 第二次検定", parts: ["1級二次"], apply: null, exam: ["2026-10-18", "2026-10-18"], announce: "2027-01-08", detail: "" },
+    ],
+  },
+  {
+    id: "eisei", name: "衛生管理者（第一種・第二種）", cat: "tech", org: "安全衛生技術試験協会", anytime: true,
+    url: "https://www.exam.or.jp/",
+    prefUrl: { "愛知県": "https://www.exam.or.jp/center_chubu" },
+    parts: [["第一種", "第一種衛生管理者"], ["第二種", "第二種衛生管理者"]],
+    fees: [{ label: "", yen: 8800 }], feeNote: "令和5年6月時点",
+    note: "各地の安全衛生技術センターで毎月複数回。日程と空き状況はセンターのページで確認。",
+    prefNote: { "愛知県": "愛知県は中部安全衛生技術センター（東海市）で毎月複数回実施。日程と空き状況はセンターのページで確認。" },
+    sessions: [],
+  },
+  {
+    id: "boiler", name: "ボイラー技士", cat: "tech", org: "安全衛生技術試験協会", anytime: true,
+    url: "https://www.exam.or.jp/",
+    prefUrl: { "愛知県": "https://www.exam.or.jp/center_chubu" },
+    parts: [["二級", "二級ボイラー技士"], ["一級", "一級ボイラー技士"], ["特級", "特級ボイラー技士"]],
+    fees: [{ label: "", yen: 8800 }], feeNote: "令和5年6月時点",
+    note: "各地の安全衛生技術センターで実施（二級は毎月）。日程はセンターのページで確認。",
+    sessions: [],
+  },
+  {
     id: "gijutsushi", name: "技術士", cat: "tech", org: "日本技術士会",
     url: "https://www.engineer.or.jp/c_topics/011/011780.html",
     parts: [["一次", "第一次試験"], ["二次", "第二次試験"]],
@@ -269,7 +343,56 @@ window.EXAMS = [
 
   // ───────── ビジネス・AI ─────────
   {
-    id: "bijihou", name: "ビジネス実務法務検定", cat: "biz", org: "東京商工会議所",
+    id: "gyosei", name: "行政書士", cat: "law", org: "行政書士試験研究センター",
+    url: "https://gyosei-shiken.or.jp/",
+    fees: [{ label: "", yen: 10400 }],
+    note: "年1回・11月第2日曜。申込は例年7月下旬〜8月下旬。",
+    sessions: [
+      { label: "令和8年度", apply: ["2026-07-21", "2026-08-24"], exam: ["2026-11-08", "2026-11-08"], announce: "2027-01-27",
+        detail: "郵送申込は 8/17 まで" },
+    ],
+  },
+  {
+    id: "sharoushi", name: "社会保険労務士", cat: "law", org: "全国社会保険労務士会連合会 試験センター",
+    url: "https://www.sharosi-siken.or.jp/",
+    note: "年1回・8月下旬。次回（令和9年度）の日程は例年4月ごろ発表、申込は4月中旬〜5月末。",
+    sessions: [
+      { label: "令和8年度（第58回）", apply: ["2026-04-13", "2026-05-31"], exam: ["2026-08-23", "2026-08-23"], announce: "2026-10-01", detail: "" },
+    ],
+  },
+  {
+    id: "shindanshi", name: "中小企業診断士", cat: "law", org: "中小企業診断協会",
+    url: "https://www.j-smeca.jp/",
+    parts: [["一次", "第1次試験"], ["二次", "第2次試験（筆記）"]], partsNote: "第1次は科目合格制。2026年度から第2次の口述試験は廃止",
+    fees: [{ label: "第1次試験", yen: 17200 }, { label: "第2次試験", yen: 15100 }],
+    note: "第1次は8月上旬、第2次（筆記）は10月下旬。申込はインターネットのみ。",
+    sessions: [
+      { label: "2026年度 第1次試験", parts: ["一次"], apply: ["2026-04-23", "2026-05-27"], exam: ["2026-08-01", "2026-08-02"], announce: "2026-09-01", detail: "" },
+      { label: "2026年度 第2次試験（筆記）", parts: ["二次"], apply: ["2026-09-01", "2026-09-18"], exam: ["2026-10-25", "2026-10-25"], announce: "2027-01-13",
+        detail: "第1次試験の合格者が対象" },
+    ],
+  },
+  {
+    id: "chintai", name: "賃貸不動産経営管理士", cat: "law", org: "賃貸不動産経営管理士協議会",
+    url: "https://www.chintaikanrishi.jp/",
+    fees: [{ label: "", yen: 12000 }], feeNote: "インターネット申込は事務手数料込み12,400円",
+    note: "年1回・11月。申込は例年8月〜9月。",
+    sessions: [
+      { label: "令和8年度", apply: ["2026-08-03", "2026-09-30"], exam: ["2026-11-15", "2026-11-15"], announce: "2026-12-24", detail: "" },
+    ],
+  },
+  {
+    id: "kangyou", name: "管理業務主任者", cat: "law", org: "マンション管理業協会",
+    url: "https://www.kanrikyo.or.jp/",
+    fees: [{ label: "", yen: 8900 }], feeNote: "Web申込は別途事務手数料297円",
+    note: "年1回・12月第1日曜。申込は例年8月〜9月。",
+    sessions: [
+      { label: "令和8年度", apply: ["2026-08-03", "2026-09-30"], exam: ["2026-12-06", "2026-12-06"], announce: "2027-01-15",
+        detail: "郵送申込は 8/24 まで" },
+    ],
+  },
+  {
+    id: "bijihou", name: "ビジネス実務法務検定", cat: "law", org: "東京商工会議所",
     url: "https://kentei.tokyo-cci.or.jp/houmu/",
     parts: [["1級","1級"],["2級","2級"],["3級","3級"]],
     fees: [{ label: "2級（IBT）", yen: 7700 }, { label: "3級（IBT）", yen: 5500 }, { label: "1級（CBT利用料込み）", yen: 12100 }, { label: "2級（CBT利用料込み）", yen: 9900 }, { label: "3級（CBT利用料込み）", yen: 7700 }], feeNote: "2025年度の金額",
@@ -294,5 +417,40 @@ window.EXAMS = [
       { label: "2027 第5回（オンライン）", apply: ["2027-07-09", "2027-08-27"], exam: ["2027-09-04", "2027-09-04"], detail: "会場試験は 9/3〜9/5" },
       { label: "2027 第6回（オンライン）", apply: ["2027-09-10", "2027-10-28"], exam: ["2027-11-05", "2027-11-06"], detail: "" },
     ],
+  },
+
+  {
+    id: "eshikaku", name: "E資格（エンジニア資格）", cat: "biz", org: "日本ディープラーニング協会",
+    url: "https://www.jdla.org/certificate/engineer/",
+    fees: [{ label: "一般", yen: 33000 }, { label: "学生", yen: 22000 }, { label: "会員", yen: 27500 }],
+    note: "受験には、試験日の過去2年以内に JDLA 認定プログラムを修了している必要あり。年2回（2月・8月）。",
+    sessions: [
+      { label: "2027 第1回", apply: ["2026-12-01", "2027-02-18"], exam: ["2027-02-19", "2027-02-21"], detail: "申込は受験日前日 23:59 まで" },
+      { label: "2027 第2回", apply: ["2027-06-01", "2027-08-26"], exam: ["2027-08-27", "2027-08-29"], detail: "申込は受験日前日 23:59 まで" },
+    ],
+  },
+  {
+    id: "dskentei", name: "データサイエンティスト検定（DS検定）", cat: "biz", org: "データサイエンティスト協会",
+    url: "https://www.datascientist.or.jp/dskentei/",
+    fees: [{ label: "一般", yen: 11000 }, { label: "学生", yen: 5500 }], feeNote: "税込（税抜 10,000円／5,000円）",
+    note: "リテラシーレベル。CBT方式で年3回（3月・6月・11月ごろ）。",
+    sessions: [
+      { label: "第14回", apply: ["2026-09-21", "2026-10-23"], exam: ["2026-11-07", "2026-11-22"], detail: "団体申込は 10/16 まで" },
+    ],
+  },
+  {
+    id: "genai", name: "生成AIパスポート", cat: "biz", org: "生成AI活用普及協会（GUGA）",
+    url: "https://guga.or.jp/",
+    note: "自宅で受けるオンライン試験（IBT）。年数回実施。",
+    sessions: [
+      { label: "第5回", apply: ["2026-08-01", "2026-09-30"], exam: ["2026-10-01", "2026-10-31"], detail: "期間内に自宅で受験" },
+    ],
+  },
+  {
+    id: "toukei", name: "統計検定", cat: "biz", org: "統計質保証推進協会", anytime: true,
+    url: "https://www.toukei-kentei.jp/",
+    parts: [["準1級", "準1級"], ["2級", "2級"], ["3級", "3級"], ["4級", "4級"]],
+    note: "準1級〜4級などは CBT 方式で随時受験できる。",
+    sessions: [],
   },
 ];
