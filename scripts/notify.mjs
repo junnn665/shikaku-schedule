@@ -67,7 +67,7 @@ function eventsFor(s) {
 
 async function main() {
   const state = await loadState();
-  if (!state) { console.log("STATE_GIST_ID が未設定のため通知しません"); return; }
+  if (!state) { console.log("::warning::STATE_GIST_ID（Actions の Variables）が見つからないため通知しません"); return; }
   const stars = state.stars || {};
   const passed = state.passed || {};
   const passedParts = state.passedParts || {};
@@ -91,8 +91,8 @@ async function main() {
     }
     for (const ev of eventsFor(s)) items.push({ ...ev, s });
   }
-  console.log(`☆ ${Object.keys(stars).length}件 / 合格記録 ${Object.keys(passedParts).length + Object.keys(passed).length}件を読み込み`);
-  if (!items.length) { console.log(`${TODAY}: 通知はありません`); return; }
+  console.log(`::notice::☆ ${Object.keys(stars).length}件 / 合格記録 ${Object.keys(passedParts).length + Object.keys(passed).length}件を読み込み`);
+  if (!items.length) { console.log(`::notice::${TODAY}: 通知する予定はありません`); return; }
   items.sort((a, b) => a.pri - b.pri);
 
   const title = (env.TEST_ALL ? "【テスト】" : "") + `【資格】${md(TODAY)} のお知らせ ${items.length}件` + (items.some((i) => i.pri === 0) ? "（締切間近あり）" : "");
