@@ -21,7 +21,7 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, progress: {}, licenses: {}, updatedAt: 0 };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, progress: {}, licenses: {}, scores: {}, targets: {}, updatedAt: 0 };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
@@ -62,6 +62,7 @@
   const partName = (ex, id) => { const p = (ex.parts || []).find((q) => q[0] === id); return p ? p[1] : id; };
   const passedPartsOf = (ex) => (store.passedParts && store.passedParts[ex.id]) || {};
   const isPassed = (ex) => {
+    if (ex.score) return false; // スコア型（TOEIC）は合否ではなくスコアで管理
     if (store.passed && store.passed[ex.id]) return true;
     const ids = partIds(ex);
     return !!ids && ids.every((id) => passedPartsOf(ex)[id]);
@@ -69,8 +70,9 @@
   const sessionParts = (s) => s.parts || partIds(s.exam_) || [];
   // その回で受けられる区分がすべて合格済みなら、その回はもう不要
   const sessionDone = (s) => isPassed(s.exam_) || (!!s.exam_.parts && sessionParts(s).length > 0 && sessionParts(s).every((id) => passedPartsOf(s.exam_)[id]));
-  // 以前の「資格まるごと合格」の記録を区分ごとの記録に移す
+  // 以前の「資格まるごと合格」の記録を区分ごとの記録に移す（スコア型は合格記録を使わない）
   EXAMS.forEach((ex) => {
+    if (ex.score && store.passed && store.passed[ex.id]) delete store.passed[ex.id];
     if (ex.parts && store.passed && store.passed[ex.id]) {
       store.passedParts[ex.id] = Object.fromEntries(partIds(ex).map((id) => [id, store.passed[ex.id]]));
       delete store.passed[ex.id];
@@ -129,7 +131,18 @@
   const subLine = (ex) => `<div class="sub">${esc(CATS[ex.cat].label)} ・ ${esc(ex.org)}</div>`;
   const officialLink = (ex) => `<div class="links"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a>
     ${passBtn(ex)}</div>`;
+  // ---------- スコア（TOEIC） ----------
+  const addYMD = (d, y = 0, m = 0) => { const t = toD(d); t.setUTCFullYear(t.getUTCFullYear() + y, t.getUTCMonth() + m); return toS(t); };
+  const scoresOf = (ex) => ((store.scores && store.scores[ex.id]) || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  const totalOf = (sc) => (sc.sections ? Object.values(sc.sections) : []).reduce((a, b) => a + (Number(b) || 0), 0);
+  const scoreUntil = (ex, sc) => addYMD(sc.date, ex.score.validYears || 2);
+  const validScores = (ex) => scoresOf(ex).filter((sc) => scoreUntil(ex, sc) >= TODAY);
+  const bestValid = (ex) => validScores(ex).sort((a, b) => totalOf(b) - totalOf(a) || b.date.localeCompare(a.date))[0];
   function passBtn(ex) {
+    if (ex.score) {
+      const b = bestValid(ex);
+      return `<button class="pass-btn ${b ? "has" : ""}" data-score="${ex.id}" title="スコアを記録します">📝 スコアを記録${b ? `（有効な最高 ${totalOf(b)}点）` : ""}</button>`;
+    }
     if (!ex.parts) return `<button class="pass-btn" data-pass="${ex.id}" title="合格した資格を表示から外します">✓ 合格済みにする</button>`;
     const n = Object.keys(passedPartsOf(ex)).length;
     return `<button class="pass-btn ${n ? "has" : ""}" data-passparts="${ex.id}" title="区分ごとに合格を記録します">✓ 合格を記録${n ? `（${n}/${ex.parts.length}）` : ""}</button>`;
@@ -167,7 +180,10 @@
     if (!pr.paid) return st.code === "open" ? `受験料の支払い（締切 ${fmt(s.apply[1])}）` : "受験料の支払いを確認";
     if (!pr.ticket && s.exam[0] >= TODAY) return diff(TODAY, s.exam[0]) <= 14 ? "受験票（会場・時間）を確認" : "受験票が届いたらチェック";
     if (!pr.taken) return s.exam[0] > TODAY ? `試験まであと${diff(TODAY, s.exam[0])}日` : "受験したらチェック";
-    if (!pr.result) return s.announce ? (s.announce > TODAY ? `結果発表は ${fmt(s.announce)}` : "結果を確認") : "結果を確認";
+    if (!pr.result) {
+      if (s.announce && s.announce > TODAY) return `結果発表は ${fmt(s.announce)}`;
+      return s.exam_.score ? "スコアを確認して「取得済み」に記録" : "結果を確認";
+    }
     return "完了";
   }
   function progressBlock(s) {
@@ -441,10 +457,9 @@
   }
 
   // ---------- 取得済み：合格の記録・免状・期限 ----------
-  const addYMD = (d, y = 0, m = 0) => { const t = toD(d); t.setUTCFullYear(t.getUTCFullYear() + y, t.getUTCMonth() + m); return toS(t); };
   const fyEnd = (d, plusYears) => { const t = toD(d); const fy = t.getUTCMonth() >= 3 ? t.getUTCFullYear() : t.getUTCFullYear() - 1; return `${fy + plusYears + 1}-03-31`; };
   const passDateOf = (ex, part) => (part ? passedPartsOf(ex)[part] : store.passed[ex.id]) || "";
-  const hasRecord = (ex) => !!store.passed[ex.id] || Object.keys(passedPartsOf(ex)).length > 0;
+  const hasRecord = (ex) => (ex.score ? scoresOf(ex).length > 0 : !!store.passed[ex.id] || Object.keys(passedPartsOf(ex)).length > 0);
   const licOf = (id) => (store.licenses && store.licenses[id]) || {};
 
   // 科目合格・一部免除などの期限（まだ残りの区分がある場合だけ）
@@ -470,6 +485,57 @@
       .sort((a, b) => a.until.localeCompare(b.until));
   }
 
+  function scoreCard(ex) {
+    const all = scoresOf(ex), best = bestValid(ex), latestS = all[0];
+    const target = (store.targets || {})[ex.id];
+    const secs = ex.score.sections;
+    return `<article class="card have-card" ${catStyle(ex)}>
+      <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
+        <button class="btn ghost small" data-score="${ex.id}">スコアを追加・編集</button></div>
+      <div class="score-hero">
+        <div><small>有効な最高スコア</small><b>${best ? totalOf(best) : "—"}</b>${best ? `<span>${fmt(best.date, true)} 受験 ・ ${fmt(scoreUntil(ex, best), true)} まで</span>` : `<span>2年以内のスコアがありません</span>`}</div>
+        <div><small>目標</small><b>${target || "—"}</b>${target && best ? `<span>${totalOf(best) >= target ? "達成 🎉" : `あと ${target - totalOf(best)}点`}</span>` : `<span>&nbsp;</span>`}</div>
+      </div>
+      <table class="score-table"><thead><tr><th>受験日</th>${secs.map(([k]) => `<th>${esc(k)}</th>`).join("")}<th>合計</th><th>期限</th></tr></thead><tbody>
+        ${all.map((sc) => { const u = scoreUntil(ex, sc), exp = u < TODAY; return `<tr class="${exp ? "expired" : ""} ${sc === best ? "best" : ""}"><td>${fmt(sc.date, true)}</td>${secs.map(([k]) => `<td>${esc(sc.sections[k] ?? "")}</td>`).join("")}<td><b>${totalOf(sc)}</b></td><td>${exp ? "期限切れ" : fmt(u, true)}</td></tr>`; }).join("")}
+      </tbody></table>
+      ${latestS && best && latestS !== best ? `<div class="detail">最新：${totalOf(latestS)}点（${fmt(latestS.date, true)}）</div>` : ""}
+      <div class="detail">${esc(ex.score.validText)}</div>
+    </article>`;
+  }
+
+  // スコア入力ダイアログ
+  let scoreEditing = null;
+  function openScoreDialog(id) {
+    const ex = EXAMS.find((e) => e.id === id);
+    scoreEditing = ex;
+    const secs = ex.score.sections;
+    const lastExam = ALL_SESSIONS.filter((s) => s.exam_ === ex && s.exam[0] <= TODAY).map((s) => s.exam[0]).sort().pop() || TODAY;
+    document.getElementById("passTitle").textContent = `${ex.name} のスコア`;
+    document.getElementById("passBody").innerHTML = `
+      <div class="score-form">
+        <label>受験日<input type="date" class="mini-input" id="scDate" value="${lastExam}"></label>
+        ${secs.map(([k, label, max]) => `<label>${esc(label)}<input type="number" class="mini-input" data-sec="${k}" min="0" max="${max}" step="5" inputmode="numeric" placeholder="0〜${max}"></label>`).join("")}
+        <div class="score-total">合計 <b id="scTotal">0</b></div>
+      </div>
+      <div class="plan-actions"><button class="btn" id="scoreAdd">このスコアを追加</button></div>
+      <label class="target-row">目標スコア<input type="number" class="mini-input" id="scTarget" min="0" max="${secs.reduce((a, s) => a + s[2], 0)}" step="5" value="${esc((store.targets || {})[ex.id] || "")}" placeholder="例：800"></label>
+      ${scoresOf(ex).length ? `<h3 class="dlg-sub">記録済み</h3>${scoresOf(ex).map((sc, i) => `<div class="score-line"><span>${fmt(sc.date, true)}</span><span>${secs.map(([k]) => `${k} ${sc.sections[k] ?? "-"}`).join(" / ")}</span><b>${totalOf(sc)}</b><button class="btn ghost small" data-delscore="${sc.date}|${i}">削除</button></div>`).join("")}` : ""}
+      <p class="hint">${esc(ex.score.validText)}</p>`;
+    document.getElementById("passDlg").showModal();
+  }
+  function addScore() {
+    const ex = scoreEditing; if (!ex) return;
+    const date = document.getElementById("scDate").value;
+    const sections = {};
+    let ok = !!date;
+    document.querySelectorAll("#passBody input[data-sec]").forEach((i) => { if (i.value === "") ok = false; sections[i.dataset.sec] = Number(i.value); });
+    if (!ok) { toast("受験日とスコアをすべて入れてください"); return; }
+    store.scores[ex.id] = [...(store.scores[ex.id] || []).filter((sc) => sc.date !== date), { date, sections }];
+    save(); renderAll(); openScoreDialog(ex.id);
+    toast(`${totalOf({ sections })}点を記録しました`);
+  }
+
   function renderHave() {
     const list = EXAMS.filter(hasRecord);
     const latest = (ex) => store.passed[ex.id] || Object.values(passedPartsOf(ex)).sort().pop() || "";
@@ -484,6 +550,7 @@
     const deadlines = [
       ...credits.map((c) => ({ until: c.until, n: c.n, title: `${c.ex.name}：${partName(c.ex, c.pid)}`, text: c.text, approx: true })),
       ...renews.map((r) => ({ until: r.until, n: r.n, title: `${r.ex.name}：更新・講習`, text: (r.ex.renewal && r.ex.renewal.text) || "設定した更新期限" })),
+      ...EXAMS.filter((ex) => ex.score && bestValid(ex)).map((ex) => { const b = bestValid(ex), u = scoreUntil(ex, b); return { until: u, n: diff(TODAY, u), title: `${ex.name}：${totalOf(b)}点（${fmt(b.date, true)}）の有効期限`, text: "有効な最高スコアの期限（2年）。それまでに受け直すと安心" }; }),
     ].sort((a, b) => a.until.localeCompare(b.until));
     if (deadlines.length) {
       h += `<h2 class="section-title">期限</h2><div class="card deadline-list">${deadlines.map((d) => `
@@ -494,6 +561,7 @@
     }
     h += `<h2 class="section-title">合格・取得の記録</h2>`;
     h += list.map((ex) => {
+      if (ex.score) return scoreCard(ex);
       const lic = licOf(ex.id);
       const parts = ex.parts ? ex.parts.filter(([pid]) => passedPartsOf(ex)[pid]) : [];
       const firstDate = latest(ex);
@@ -594,7 +662,7 @@
   const SYNC_KEY = "shikaku-schedule:sync";
   const GIST_DESC = "shikaku-schedule state";
   const GIST_FILE = "state.json";
-  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "progress", "licenses", "pref", "updatedAt"];
+  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "progress", "licenses", "scores", "targets", "pref", "updatedAt"];
   let sync = {};
   try { sync = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}"); } catch (e) { /* 無視 */ }
   const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) { /* 無視 */ } };
@@ -815,6 +883,14 @@
       return;
     }
     if (t.dataset.passparts) { openPassDialog(t.dataset.passparts); return; }
+    if (t.dataset.score) { openScoreDialog(t.dataset.score); return; }
+    if (t.id === "scoreAdd") { addScore(); return; }
+    if (t.dataset.delscore) {
+      const ex = scoreEditing, [date] = t.dataset.delscore.split("|");
+      store.scores[ex.id] = (store.scores[ex.id] || []).filter((sc) => sc.date !== date);
+      if (!store.scores[ex.id].length) delete store.scores[ex.id];
+      save(); renderAll(); openScoreDialog(ex.id); return;
+    }
     if (t.dataset.step) {
       const k = t.dataset.key, st = t.dataset.step;
       store.progress[k] = { ...progOf(k) };
@@ -890,6 +966,11 @@
   document.addEventListener("change", (e) => {
     if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
     if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
+    if (e.target.id === "scTarget") {
+      const v = Number(e.target.value);
+      if (v > 0) store.targets[scoreEditing.id] = v; else delete store.targets[scoreEditing.id];
+      save(); renderHave(); return;
+    }
     if (e.target.dataset && e.target.dataset.lic) {
       const id = e.target.dataset.lic, f = e.target.dataset.field;
       store.licenses[id] = { ...licOf(id), [f]: e.target.value };
@@ -907,6 +988,10 @@
     if (id) { store.memo[id] = e.target.value; save(); return; }
     const lm = e.target.dataset && e.target.dataset.licmemo;
     if (lm) { store.licenses[lm] = { ...licOf(lm), memo: e.target.value }; save(); return; }
+    if (e.target.dataset && e.target.dataset.sec !== undefined) {
+      let t = 0; document.querySelectorAll("#passBody input[data-sec]").forEach((i) => { t += Number(i.value) || 0; });
+      document.getElementById("scTotal").textContent = t; return;
+    }
     if (e.target.id === "q") {
       query = e.target.value.trim();
       renderDeadline(); renderList(); renderCalendar();

@@ -107,6 +107,16 @@ async function main() {
       const n = diff(TODAY, lic.renew);
       if (SOON.includes(n)) items.push({ pri: n <= 7 ? 0 : 2, text: n === 0 ? "⚠️ 今日が更新期限です" : `更新期限まであと${n}日（${md(lic.renew)}）`, s: { ex, label: "免状・更新" } });
     }
+    // スコアの有効期限（TOEIC：有効な最高スコアの2年）
+    for (const ex of EXAMS.filter((e) => e.score)) {
+      const total = (sc) => Object.values(sc.sections || {}).reduce((x, y) => x + (Number(y) || 0), 0);
+      const valid = ((state.scores || {})[ex.id] || []).filter((sc) => addYMD(sc.date, ex.score.validYears || 2) >= TODAY);
+      const best = valid.sort((a, b) => total(b) - total(a) || b.date.localeCompare(a.date))[0];
+      if (!best) continue;
+      const until = addYMD(best.date, ex.score.validYears || 2);
+      const n = diff(TODAY, until);
+      if ([90, 30, 7].includes(n)) items.push({ pri: n <= 7 ? 1 : 2, text: `${total(best)}点（${md(best.date)}受験）の有効期限まであと${n}日（${md(until)}）`, s: { ex, label: "スコアの期限" } });
+    }
     // 科目合格・一部免除の期限（残りの区分がある場合）
     for (const ex of EXAMS) {
       const pp = passedParts[ex.id] || {};

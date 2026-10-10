@@ -159,6 +159,7 @@ window.EXAMS = [
   {
     id: "toeic", name: "TOEIC L&R 公開テスト", cat: "lang", org: "IIBC",
     url: "https://www.iibc-global.org/toeic/test/lr/guide01/schedule.html",
+    score: { sections: [["L", "Listening", 495], ["R", "Reading", 495]], validYears: 2, validText: "スコアは試験日から2年を目安に管理（公式認定証の再発行は2年以内。企業・学校の多くも2年以内のスコアを求める）" },
     fees: [{ label: "紙の認定証あり", yen: 7810 }, { label: "紙の認定証なし", yen: 7700 }], feeNote: "リピート受験割引あり",
     note: "午前・午後の1日2回実施。申込はインターネット（締切は15:00）。",
     sessions: [
