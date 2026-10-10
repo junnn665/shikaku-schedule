@@ -28,8 +28,8 @@ jobs:
 
       - name: ☆を付けた試験を確認して通知
         env:
-          STATE_GIST_ID: ${{ vars.STATE_GIST_ID }}
-          # 変数が見つからないときは Actions のログに「未設定」と出る
+          STATE_GIST_ID: ${{ vars.STATE_GIST_ID || secrets.STATE_GIST_ID }}
+          # Variables と Secrets のどちらに登録しても読む
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO_OWNER: ${{ github.repository_owner }}
