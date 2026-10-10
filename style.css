@@ -380,3 +380,27 @@ code { font-size: 12px; background: var(--surface-2); border: 1px solid var(--li
 .dlg-sub { font-size: 14px; margin: 16px 0 4px; }
 .score-line { display: flex; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
 .score-line span:nth-child(2) { flex: 1; color: var(--ink-2); }
+
+/* guide / apply */
+.guide { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: baseline; margin-top: 6px; font-size: 12px; color: var(--ink-2); }
+.guide b { font-weight: 500; color: var(--ink); }
+.guide small { color: var(--ink-3); font-size: 10px; border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
+.apply-btn {
+  display: inline-block; margin-top: 10px; padding: 7px 14px; border-radius: 10px; font-size: 13px; font-weight: 700; text-decoration: none;
+  border: 1px solid var(--line); color: var(--ink-2); background: var(--surface-2);
+}
+.apply-btn.open { background: var(--accent); border-color: var(--accent); color: #fff; }
+.session .apply-btn { margin-top: 6px; padding: 4px 10px; font-size: 12px; }
+
+/* year summary */
+.year-card { border-left-color: var(--accent); }
+.year-head { display: flex; justify-content: flex-end; }
+.year-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.year-stats > div { background: var(--surface-2); border-radius: 12px; padding: 8px 10px; }
+.year-stats small { display: block; font-size: 11px; color: var(--ink-3); }
+.year-stats b { font-family: "Zen Kaku Gothic New", sans-serif; font-weight: 900; font-size: 24px; }
+.year-stats span { font-size: 11px; color: var(--ink-2); margin-left: 2px; }
+.year-list { list-style: none; padding: 0; margin: 10px 0 0; }
+.year-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.year-list li .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.year-list li small { margin-left: auto; color: var(--ink-3); font-size: 12px; }

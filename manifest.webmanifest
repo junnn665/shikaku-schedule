@@ -1,0 +1,16 @@
+{
+  "name": "資格スケジュール帳",
+  "short_name": "資格スケジュール",
+  "description": "資格試験の申込期間・試験日・合格記録をまとめるスケジュール帳",
+  "lang": "ja",
+  "start_url": "./#deadline",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f4ef",
+  "theme_color": "#c2410c",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

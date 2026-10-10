@@ -157,6 +157,13 @@
   }
 
   const yen = (n) => n.toLocaleString("ja-JP") + "円";
+  const guideLine = (ex) => ex.guide ? `<div class="guide">${ex.guide.rate ? `<span>合格率 <b>${esc(ex.guide.rate)}</b></span>` : ""}<span>勉強時間 <b>${esc(ex.guide.hours)}</b></span><small>目安</small></div>` : "";
+  const applyLink = (s) => {
+    const st = statusOf(s);
+    if (!["open", "before"].includes(st.code)) return "";
+    const url = s.exam_.applyUrl || urlOf(s.exam_);
+    return `<a class="apply-btn ${st.code === "open" ? "open" : ""}" href="${esc(url)}" target="_blank" rel="noopener">${st.code === "open" ? "申込ページを開く ↗" : `申込は ${fmt(s.apply[0])} から ↗`}</a>`;
+  };
   const announceOf = (s) => (s.announce ? fmt(s.announce) : s.announceText || "");
   const announceLabel = (s) => s.announceLabel || "合格発表";
   function feeText(ex) {
@@ -217,6 +224,7 @@
         ${partChips(s)}
         ${s.detail ? `<div class="detail">${esc(s.detail)}</div>` : ""}
         ${opts.progress ? progressBlock(s) : ""}
+        ${applyLink(s)}
         ${officialLink(ex)}
       </article>`;
   }
@@ -231,6 +239,7 @@
         </div>
         <p class="note">${esc(noteOf(ex))}</p>
         <dl class="rows"><dt>受験料</dt><dd>${esc(feeText(ex))}</dd></dl>
+        ${guideLine(ex)}
         ${officialLink(ex)}
         ${extra}
       </article>`;
@@ -270,7 +279,7 @@
         : `<button class="more-btn" data-far="1">その先の予定を表示（${far.length}件）</button>`;
     }
     if (anytime.length) {
-      h += `<h2 class="section-title">随時受験・地域ごとの試験</h2>`;
+      h += `<h2 class="section-title">随時受験・地域ごと・日程未掲載の試験</h2>`;
       h += anytime.map((e) => simpleExamCard(e)).join("");
     }
     document.getElementById("view-deadline").innerHTML = h;
@@ -295,6 +304,7 @@
             <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div></div>
             <p class="note">${esc(noteOf(ex))}</p>
             <div class="note">受験料：${esc(feeText(ex))}${ex.feeNote ? `（${esc(ex.feeNote)}）` : ""}</div>
+            ${guideLine(ex)}
             <div class="sessions">
               ${visible.length ? visible.map((s) => {
                 const st = statusOf(s);
@@ -306,6 +316,7 @@
                     <div class="session-dates">試験 <b>${fmtRange(s.exam)}</b></div>
                     ${announceOf(s) ? `<div class="session-dates">発表 <b>${esc(announceOf(s))}</b></div>` : ""}
                     ${partChips(s)}
+                    ${applyLink(s)}
                     ${s.detail ? `<div class="detail">${esc(s.detail)}</div>` : ""}
                   </div></div>`;
               }).join("") : `<div class="detail" style="padding:10px 0">今後の予定は未掲載です</div>`}
@@ -536,17 +547,57 @@
     toast(`${totalOf({ sections })}点を記録しました`);
   }
 
+  // 年間まとめ
+  let haveYear = TODAY.slice(0, 4);
+  function yearSummary() {
+    const years = new Set([TODAY.slice(0, 4)]);
+    Object.values(store.progress || {}).forEach((p) => Object.values(p).forEach((d) => years.add(String(d).slice(0, 4))));
+    EXAMS.forEach((ex) => { const d = store.passed[ex.id]; if (d) years.add(d.slice(0, 4)); Object.values(passedPartsOf(ex)).forEach((x) => years.add(x.slice(0, 4))); scoresOf(ex).forEach((sc) => years.add(sc.date.slice(0, 4))); });
+    const ys = [...years].filter((y) => /^\d{4}$/.test(y)).sort().reverse();
+    const y = haveYear;
+    const inY = (d) => d && String(d).startsWith(y);
+    let fee = 0, feeUnknown = 0, taken = 0;
+    const takenList = [];
+    for (const [key, pr] of Object.entries(store.progress || {})) {
+      const s = ALL_SESSIONS.find((x) => x.key === key);
+      if (inY(pr.paid) && s) {
+        const fees = s.exam_.fees || [];
+        if (fees.length) fee += fees[Math.min(store.feeChoice[s.exam_.id] || 0, fees.length - 1)].yen; else feeUnknown++;
+      }
+      if (inY(pr.taken) && s) { taken++; takenList.push(s); }
+    }
+    const passes = [];
+    EXAMS.forEach((ex) => {
+      if (inY(store.passed[ex.id]) && !ex.score) passes.push({ ex, label: ex.name, date: store.passed[ex.id] });
+      Object.entries(passedPartsOf(ex)).forEach(([pid, d]) => { if (inY(d)) passes.push({ ex, label: `${ex.name} ${partName(ex, pid)}`, date: d }); });
+    });
+    passes.sort((a, b) => a.date.localeCompare(b.date));
+    const toeicBest = EXAMS.filter((ex) => ex.score).map((ex) => ({ ex, best: scoresOf(ex).filter((sc) => inY(sc.date)).sort((a, b) => totalOf(b) - totalOf(a))[0] })).filter((x) => x.best);
+    return `<h2 class="section-title">年間まとめ</h2>
+      <div class="card year-card">
+        <div class="year-head"><select id="haveYear" class="fee-select">${ys.map((v) => `<option value="${v}" ${v === y ? "selected" : ""}>${v}年</option>`).join("")}</select></div>
+        <div class="year-stats">
+          <div><small>合格</small><b>${passes.length}</b><span>件</span></div>
+          <div><small>受験</small><b>${taken}</b><span>回</span></div>
+          <div><small>受験料</small><b>${fee.toLocaleString("ja-JP")}</b><span>円${feeUnknown ? `＋不明${feeUnknown}件` : ""}</span></div>
+        </div>
+        ${passes.length ? `<ul class="year-list">${passes.map((p) => `<li><span class="dot" style="background:${CATS[p.ex.cat].color}"></span>${esc(p.label)}<small>${fmt(p.date, true)}</small></li>`).join("")}</ul>` : ""}
+        ${toeicBest.map((x) => `<div class="detail">${esc(x.ex.name)} の年間ベスト：<b>${totalOf(x.best)}点</b>（${fmt(x.best.date, true)}）</div>`).join("")}
+        <p class="hint">受験数と受験料は「受験予定」のチェック（受験・入金）をもとに集計します。</p>
+      </div>`;
+  }
+
   function renderHave() {
     const list = EXAMS.filter(hasRecord);
     const latest = (ex) => store.passed[ex.id] || Object.values(passedPartsOf(ex)).sort().pop() || "";
     list.sort((a, b) => latest(b).localeCompare(latest(a)));
     document.getElementById("haveCount").textContent = list.length || "";
     if (!list.length) {
-      document.getElementById("view-have").innerHTML = `<div class="empty">合格した資格がここに並びます。<br>各カードの「✓ 合格済みにする」「✓ 合格を記録」から登録してください。</div>`;
+      document.getElementById("view-have").innerHTML = yearSummary() + `<div class="empty">合格した資格がここに並びます。<br>各カードの「✓ 合格済みにする」「✓ 合格を記録」から登録してください。</div>`;
       return;
     }
     const credits = creditItems(), renews = renewItems();
-    let h = "";
+    let h = yearSummary();
     const deadlines = [
       ...credits.map((c) => ({ until: c.until, n: c.n, title: `${c.ex.name}：${partName(c.ex, c.pid)}`, text: c.text, approx: true })),
       ...renews.map((r) => ({ until: r.until, n: r.n, title: `${r.ex.name}：更新・講習`, text: (r.ex.renewal && r.ex.renewal.text) || "設定した更新期限" })),
@@ -966,6 +1017,7 @@
   document.addEventListener("change", (e) => {
     if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
     if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
+    if (e.target.id === "haveYear") { haveYear = e.target.value; renderHave(); return; }
     if (e.target.id === "scTarget") {
       const v = Number(e.target.value);
       if (v > 0) store.targets[scoreEditing.id] = v; else delete store.targets[scoreEditing.id];
@@ -1001,6 +1053,9 @@
   document.getElementById("today").textContent = `今日 ${fmt(TODAY, true)}`;
   document.getElementById("checked").textContent = fmt(window.DATA_CHECKED, true);
   if (AUTO.updated) document.getElementById("autoInfo").textContent = `危険物取扱者・消防設備士（全都道府県）とTOEICの日程は公式サイトから毎日自動で取り込んでいます（最終更新 ${fmt(AUTO.updated, true)}）。`;
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    navigator.serviceWorker.register("sw.js").catch(() => { /* オフライン非対応の環境 */ });
+  }
   renderPref();
   renderAll();
   setSyncStatus(syncStatus);

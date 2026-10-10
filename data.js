@@ -2,6 +2,8 @@
 // 日付は "YYYY-MM-DD"。pref を付けた回はその受験地を選んだときだけ表示。fallback は該当受験地の回がないときに表示。
 //期間は [開始, 終了]。null は未発表・不明。
 // parts: 合格を区分ごとに記録する単位 [[id, 表示名]]。回の parts はその回で受けられる区分（省略時は全区分）。
+// applyUrl: 申込ページ（なければ公式ページ）。
+// guide: 合格率・勉強時間の目安（年度により変動する大まかな範囲）。
 // fees: 受験料 [{label, yen}]。announce: 合格発表日（確定日）、announceText: 時期だけ分かっている場合。
 // 情報確認日: 2026-10-10。申込前に必ず公式サイトで最新情報を確認してください。
 window.DATA_CHECKED = "2026-10-10";
@@ -20,6 +22,7 @@ window.EXAMS = [
   {
     id: "ap", name: "応用情報技術者試験（AP）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    guide: { rate: "約20〜25%", hours: "200〜500時間" },
     fees: [{ label: "", yen: 7500 }],
     note: "令和8年度からCBT方式に全面移行。前期・後期とも申込は1回のみ。科目A群とB群を同時に予約。",
     sessions: [
@@ -32,6 +35,7 @@ window.EXAMS = [
   {
     id: "sc", name: "情報処理安全確保支援士試験（SC）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    guide: { rate: "約20%", hours: "300〜500時間" },
     renewal: { years: 3, text: "登録した場合、3年ごとに登録の更新（講習の受講）が必要" },
     fees: [{ label: "", yen: 7500 }],
     note: "CBT方式。前期・後期の年2回。",
@@ -45,6 +49,7 @@ window.EXAMS = [
   {
     id: "koudo-zenki", name: "高度試験 前期（ST・SA・NW・SM）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    guide: { rate: "約13〜18%", hours: "300〜500時間" },
     parts: [["ST","ITストラテジスト"],["SA","システムアーキテクト"],["NW","ネットワークスペシャリスト"],["SM","ITサービスマネージャ"]],
     fees: [{ label: "", yen: 7500 }],
     note: "ITストラテジスト／システムアーキテクト／ネットワークスペシャリスト／ITサービスマネージャ。CBT方式。",
@@ -56,6 +61,7 @@ window.EXAMS = [
   {
     id: "koudo-kouki", name: "高度試験 後期（PM・DB・ES・AU）", cat: "it", org: "IPA",
     url: "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html",
+    guide: { rate: "約13〜18%", hours: "300〜500時間" },
     parts: [["PM","プロジェクトマネージャ"],["DB","データベーススペシャリスト"],["ES","エンベデッドシステムスペシャリスト"],["AU","システム監査技術者"]],
     fees: [{ label: "", yen: 7500 }],
     note: "プロジェクトマネージャ／データベーススペシャリスト／エンベデッド／システム監査。CBT方式。",
@@ -67,24 +73,28 @@ window.EXAMS = [
   {
     id: "fe", name: "基本情報技術者試験（FE）", cat: "it", org: "IPA", anytime: true,
     url: "https://www.ipa.go.jp/shiken/kubun/fe.html",
+    guide: { rate: "約40〜50%", hours: "150〜200時間" },
     fees: [{ label: "", yen: 7500 }],
     note: "CBT方式の通年試験。テストセンターの空きがあれば随時申込・受験可能。", sessions: [],
   },
   {
     id: "ip", name: "ITパスポート試験", cat: "it", org: "IPA", anytime: true,
     url: "https://www3.jitec.ipa.go.jp/JitesCbt/",
+    guide: { rate: "約50%", hours: "50〜180時間" },
     fees: [{ label: "", yen: 7500 }],
     note: "CBT方式の通年試験。随時申込・受験可能。", sessions: [],
   },
   {
     id: "sg", name: "情報セキュリティマネジメント試験（SG）", cat: "it", org: "IPA", anytime: true,
     url: "https://www.ipa.go.jp/shiken/kubun/sg.html",
+    guide: { rate: "約70%", hours: "50〜100時間" },
     fees: [{ label: "", yen: 7500 }],
     note: "CBT方式の通年試験。随時申込・受験可能。", sessions: [],
   },
   {
     id: "aws", name: "AWS認定", cat: "it", org: "Amazon Web Services", anytime: true,
     url: "https://aws.amazon.com/jp/certification/",
+    guide: { rate: "非公表", hours: "CLF 20〜40時間／SAA 80〜150時間" },
     renewal: { years: 3, text: "AWS認定の有効期間は3年" },
     note: "ピアソンVUEのテストセンター／オンラインで通年受験可能。", sessions: [],
   },
@@ -92,8 +102,69 @@ window.EXAMS = [
   {
     id: "mos", name: "MOS（Microsoft Office Specialist）", cat: "it", org: "オデッセイコミュニケーションズ", anytime: true,
     url: "https://mos.odyssey-com.co.jp/",
+    guide: { rate: "約80%", hours: "20〜40時間" },
     note: "全国一斉試験（毎月）と随時試験（各試験会場）がある。Word・Excel・PowerPoint など科目ごと。",
     parts: [["Word", "Word"], ["Excel", "Excel"], ["PowerPoint", "PowerPoint"], ["Excelエキスパート", "Excel エキスパート"], ["Wordエキスパート", "Word エキスパート"]],
+    sessions: [],
+  },
+
+  {
+    id: "linuc", name: "LinuC（Linux技術者認定）", cat: "it", org: "LPI-Japan", anytime: true,
+    url: "https://linuc.org/",
+    guide: { rate: "非公表", hours: "レベル1 各試験 30〜50時間" },
+    parts: [["L1", "レベル1"], ["L2", "レベル2"], ["L3", "レベル3"], ["system", "LinuC システムアーキテクト"]],
+    note: "ピアソンVUEのテストセンター／オンラインで随時。レベル1・2は2試験（101・102 など）の合格で認定。認定は5年間有効（有意性の期限）。",
+    sessions: [],
+  },
+  {
+    id: "lpic", name: "LPIC（Linux Professional Institute）", cat: "it", org: "LPI", anytime: true,
+    url: "https://www.lpi.org/ja/",
+    guide: { rate: "非公表", hours: "LPIC-1 各試験 30〜50時間" },
+    parts: [["LPIC-1", "LPIC-1"], ["LPIC-2", "LPIC-2"], ["LPIC-3", "LPIC-3"]],
+    note: "ピアソンVUEで随時受験。各レベル2試験の合格で認定。認定は5年間有効。",
+    renewal: { years: 5, text: "認定の有効期間は5年（上位認定の取得や再受験で更新）" },
+    sessions: [],
+  },
+  {
+    id: "oracle", name: "Oracle認定資格（ORACLE MASTER・Java）", cat: "it", org: "日本オラクル", anytime: true,
+    url: "https://education.oracle.com/ja/",
+    guide: { rate: "非公表", hours: "Bronze 30〜50時間" },
+    parts: [["Bronze", "ORACLE MASTER Bronze"], ["Silver", "ORACLE MASTER Silver"], ["Gold", "ORACLE MASTER Gold"], ["JavaSilver", "Java SE Silver"], ["JavaGold", "Java SE Gold"]],
+    note: "ピアソンVUEで随時受験（オンライン受験もあり）。",
+    sessions: [],
+  },
+  {
+    id: "python", name: "Python 3 エンジニア認定試験", cat: "it", org: "Pythonエンジニア育成推進協会", anytime: true,
+    url: "https://www.pythonic-exam.com/",
+    guide: { rate: "基礎 約80%", hours: "20〜40時間" },
+    parts: [["基礎", "基礎試験"], ["データ分析", "データ分析試験"], ["実践", "実践試験"]],
+    note: "全国のオデッセイCBTテストセンターで随時受験。",
+    sessions: [],
+  },
+  {
+    id: "azure", name: "Microsoft 認定（Azure など）", cat: "it", org: "Microsoft", anytime: true,
+    url: "https://learn.microsoft.com/ja-jp/credentials/",
+    guide: { rate: "非公表", hours: "AZ-900 10〜20時間" },
+    parts: [["AZ-900", "Azure Fundamentals（AZ-900）"], ["AI-900", "Azure AI Fundamentals（AI-900）"], ["AZ-104", "Azure Administrator（AZ-104）"], ["AZ-305", "Azure Solutions Architect（AZ-305）"]],
+    note: "ピアソンVUEで随時（オンライン受験可）。Fundamentals 以外は1年ごとに無料のオンライン更新が必要。",
+    renewal: { years: 1, text: "Associate・Expert 認定は1年ごとに更新（無料のオンライン評価）" },
+    sessions: [],
+  },
+  {
+    id: "gcloud", name: "Google Cloud 認定", cat: "it", org: "Google Cloud", anytime: true,
+    url: "https://cloud.google.com/learn/certification?hl=ja",
+    guide: { rate: "非公表", hours: "ACE 50〜100時間" },
+    parts: [["CDL", "Cloud Digital Leader"], ["ACE", "Associate Cloud Engineer"], ["PCA", "Professional Cloud Architect"], ["PDE", "Professional Data Engineer"]],
+    note: "テストセンター／オンラインで随時。認定の有効期間は多くが2〜3年。",
+    renewal: { years: 2, text: "Associate・Professional 認定は多くが2年で再認定（Cloud Digital Leader などは3年）" },
+    sessions: [],
+  },
+  {
+    id: "ccna", name: "CCNA（シスコ技術者認定）", cat: "it", org: "シスコシステムズ", anytime: true,
+    url: "https://www.cisco.com/c/ja_jp/training-events/training-certifications/certifications/associate/ccna.html",
+    guide: { rate: "非公表", hours: "100〜200時間" },
+    note: "ピアソンVUEで随時（オンライン受験可）。認定は3年間有効。",
+    renewal: { years: 3, text: "認定の有効期間は3年（再受験または継続教育で更新）" },
     sessions: [],
   },
 
@@ -101,6 +172,7 @@ window.EXAMS = [
   {
     id: "boki1", name: "日商簿記検定 1級", cat: "money", org: "日本商工会議所",
     url: "https://www.kentei.ne.jp/bookkeeping",
+    guide: { rate: "約10%", hours: "800〜1,000時間" },
     fees: [{ label: "", yen: 8800 }], feeNote: "別途、事務手数料がかかる場合あり",
     note: "1級は紙の統一試験のみ（年2回：6月・11月）。申込期間は受験地の商工会議所ごとに異なります。",
     sessions: [
@@ -115,6 +187,7 @@ window.EXAMS = [
   {
     id: "boki23", name: "日商簿記検定 2級・3級", cat: "money", org: "日本商工会議所",
     url: "https://www.kentei.ne.jp/bookkeeping",
+    guide: { rate: "2級 約20〜40%／3級 約40〜50%", hours: "2級 250〜350時間／3級 50〜100時間" },
     parts: [["2級","2級"],["3級","3級"]],
     fees: [{ label: "2級", yen: 5500 }, { label: "3級", yen: 3300 }], feeNote: "ネット試験は別途事務手数料あり（商工会議所・テストセンターにより異なる）",
     prefNote: { "愛知県": "名古屋商工会議所は2・3級の紙の試験を実施しません（ネット試験を案内）。第175回を紙で受けるなら県内の他の商工会議所で要確認。" },
@@ -127,6 +200,7 @@ window.EXAMS = [
   {
     id: "fp1", name: "FP技能検定 1級", cat: "money", org: "金融財政事情研究会（きんざい）",
     url: "https://www.kinzai.or.jp/fp",
+    guide: { rate: "学科 約10〜15%", hours: "400〜600時間" },
     parts: [["学科","1級 学科"],["実技","1級 実技"]],
     fees: [{ label: "学科", yen: 8900 }, { label: "実技（資産相談業務）", yen: 28000 }],
     note: "1級学科は紙の試験。実技（きんざい）は2027年2月予定、申込は11月中旬〜12月中旬見込み。",
@@ -138,6 +212,7 @@ window.EXAMS = [
   {
     id: "fp23", name: "FP技能検定 2級・3級", cat: "money", org: "きんざい／日本FP協会", anytime: true,
     url: "https://www.jafp.or.jp/exam/",
+    guide: { rate: "2級 約20〜40%／3級 約70〜85%", hours: "2級 150〜300時間／3級 30〜100時間" },
     credits: [{ parts: ["2級学科"], unless: ["2級実技"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }, { parts: ["2級実技"], unless: ["2級学科"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }, { parts: ["3級学科"], unless: ["3級実技"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }, { parts: ["3級実技"], unless: ["3級学科"], years: 2, fyEnd: true, text: "一部合格の免除は、合格した試験の翌々年度末まで" }],
     parts: [["2級学科","2級 学科"],["2級実技","2級 実技"],["3級学科","3級 学科"],["3級実技","3級 実技"]],
     fees: [{ label: "2級 学科＋実技", yen: 11700 }, { label: "3級 学科＋実技", yen: 8000 }, { label: "2級 学科のみ", yen: 5700 }, { label: "3級 学科のみ", yen: 4000 }],
@@ -146,6 +221,7 @@ window.EXAMS = [
   {
     id: "takken", name: "宅地建物取引士（宅建）", cat: "law", org: "不動産適正取引推進機構",
     url: "https://www.retio.or.jp/exam/",
+    guide: { rate: "約15〜18%", hours: "300〜400時間" },
     renewal: { years: 5, text: "宅建士証の有効期限は5年。更新には法定講習の受講が必要（登録・交付した場合）" },
     fees: [{ label: "", yen: 8200 }],
     note: "年1回・10月第3日曜が通例。申込は例年7月（ネット7/1〜7/31、郵送7/1〜7/15）。",
@@ -159,6 +235,7 @@ window.EXAMS = [
   {
     id: "toeic", name: "TOEIC L&R 公開テスト", cat: "lang", org: "IIBC",
     url: "https://www.iibc-global.org/toeic/test/lr/guide01/schedule.html",
+    guide: { hours: "100点上げるのに 200〜300時間が目安" },
     score: { sections: [["L", "Listening", 495], ["R", "Reading", 495]], validYears: 2, validText: "スコアは試験日から2年を目安に管理（公式認定証の再発行は2年以内。企業・学校の多くも2年以内のスコアを求める）" },
     fees: [{ label: "紙の認定証あり", yen: 7810 }, { label: "紙の認定証なし", yen: 7700 }], feeNote: "リピート受験割引あり",
     note: "午前・午後の1日2回実施。申込はインターネット（締切は15:00）。",
@@ -190,6 +267,7 @@ window.EXAMS = [
   {
     id: "denken3", name: "第三種電気主任技術者（電験三種）", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/",
+    guide: { rate: "約10〜20%", hours: "約1,000時間" },
     credits: [{ parts: ["理論", "電力", "機械", "法規"], years: 3, text: "科目合格は約3年間（連続5回の試験）有効" }],
     parts: [["理論","理論"],["電力","電力"],["機械","機械"],["法規","法規"]], partsNote: "科目合格は3年間有効",
     fees: [{ label: "", yen: 7700 }],
@@ -202,6 +280,8 @@ window.EXAMS = [
   {
     id: "kikenbutsu", name: "危険物取扱者（甲・乙・丙）", cat: "tech", org: "消防試験研究センター", regional: true,
     url: "https://shinsei.shoubo-shiken.or.jp/shoubou_ia/iajs9001.do?menjo_kbn=1",
+    applyUrl: "https://shinsei.shoubo-shiken.or.jp/",
+    guide: { rate: "乙4 約30〜40%／甲 約30〜40%", hours: "乙4 40〜60時間" },
     renewal: { years: 3, text: "危険物の取扱作業に従事している場合、保安講習を原則3年以内ごとに受講" },
     parts: [["甲","甲種"],["乙1","乙種1類"],["乙2","乙種2類"],["乙3","乙種3類"],["乙4","乙種4類"],["乙5","乙種5類"],["乙6","乙種6類"],["丙","丙種"]],
     fees: [{ label: "乙種", yen: 5300 }, { label: "甲種", yen: 7200 }, { label: "丙種", yen: 4200 }], feeNote: "2024年5月改定後の標準額。都道府県の条例で決まるため受験地で確認",
@@ -220,6 +300,8 @@ window.EXAMS = [
   {
     id: "shoubou", name: "消防設備士（甲・乙）", cat: "tech", org: "消防試験研究センター", regional: true,
     url: "https://shinsei.shoubo-shiken.or.jp/shoubou_ia/iajs9001.do?menjo_kbn=2",
+    applyUrl: "https://shinsei.shoubo-shiken.or.jp/",
+    guide: { rate: "約30〜40%", hours: "30〜80時間" },
     renewal: { years: 2, text: "免状交付後最初の4月1日から2年以内に講習、その後は5年以内ごと" },
     parts: [["甲特","甲種特類"],["甲1","甲種1類"],["甲2","甲種2類"],["甲3","甲種3類"],["甲4","甲種4類"],["甲5","甲種5類"],["乙1","乙種1類"],["乙2","乙種2類"],["乙3","乙種3類"],["乙4","乙種4類"],["乙5","乙種5類"],["乙6","乙種6類"],["乙7","乙種7類"]],
     fees: [{ label: "乙種", yen: 4400 }, { label: "甲種", yen: 6600 }], feeNote: "2024年5月改定後の標準額。受験地で確認",
@@ -232,6 +314,7 @@ window.EXAMS = [
   {
     id: "kenchiku", name: "建築施工管理技士", cat: "tech", org: "建設業振興基金",
     url: "https://www.fcip-shiken.jp/",
+    guide: { rate: "一次・二次とも年度により約30〜50%", hours: "1級 200〜300時間" },
     renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。来年度の申込は例年1級が1〜2月、2級（前期）が2〜3月頃。",
@@ -243,6 +326,7 @@ window.EXAMS = [
   {
     id: "doboku", name: "土木施工管理技士", cat: "tech", org: "全国建設研修センター",
     url: "https://www.jctc.jp/",
+    guide: { rate: "一次・二次とも年度により約30〜50%", hours: "1級 200〜300時間" },
     renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。",
@@ -254,6 +338,7 @@ window.EXAMS = [
   {
     id: "kankouji", name: "管工事施工管理技士", cat: "tech", org: "全国建設研修センター",
     url: "https://www.jctc.jp/",
+    guide: { rate: "一次・二次とも年度により約30〜60%", hours: "1級 150〜300時間" },
     renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。",
@@ -265,6 +350,7 @@ window.EXAMS = [
   {
     id: "zouen", name: "造園施工管理技士", cat: "tech", org: "全国建設研修センター",
     url: "https://www.jctc.jp/",
+    guide: { rate: "一次・二次とも年度により約30〜50%", hours: "1級 150〜300時間" },
     renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次","1級 第一次検定"],["1級二次","1級 第二次検定"],["2級一次","2級 第一次検定"],["2級二次","2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。",
@@ -277,6 +363,7 @@ window.EXAMS = [
   {
     id: "denkikouji2", name: "第二種電気工事士", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/construction/second/",
+    guide: { rate: "学科 約60%／技能 約70%", hours: "学科 50〜100時間＋技能の練習" },
     credits: [{ parts: ["学科"], unless: ["技能"], months: 6, text: "学科合格（または免除）で、次回の試験は学科免除・技能のみ" }],
     parts: [["学科", "学科試験"], ["技能", "技能試験"]],
     fees: [{ label: "", yen: 11100 }], feeNote: "別途、事務手数料あり",
@@ -291,6 +378,7 @@ window.EXAMS = [
   {
     id: "denkikouji1", name: "第一種電気工事士", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/construction/first/",
+    guide: { rate: "学科 約40〜50%／技能 約60%", hours: "200〜300時間" },
     renewal: { years: 5, text: "免状の交付後、5年以内ごとに定期講習の受講が必要" },
     credits: [{ parts: ["学科"], unless: ["技能"], months: 6, text: "学科合格で、次回の試験は学科免除・技能のみ" }],
     parts: [["学科", "学科試験"], ["技能", "技能試験"]],
@@ -306,6 +394,7 @@ window.EXAMS = [
   {
     id: "denken2", name: "第二種電気主任技術者（電験二種）", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/",
+    guide: { rate: "最終合格 約5%前後", hours: "約2,000時間" },
     credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "一次試験の合格で、その年度と翌年度の二次試験は一次免除" }],
     parts: [["一次", "一次試験"], ["二次", "二次試験"]], partsNote: "一次試験は科目合格制（理論・電力・機械・法規、3年間有効）",
     fees: [{ label: "インターネット申込", yen: 13800 }], feeNote: "令和7年度の金額",
@@ -318,6 +407,7 @@ window.EXAMS = [
   {
     id: "denkisekou", name: "電気工事施工管理技士", cat: "tech", org: "建設業振興基金",
     url: "https://www.fcip-shiken.jp/",
+    guide: { rate: "一次・二次とも年度により約30〜60%", hours: "1級 200〜300時間" },
     renewal: { years: 5, text: "監理技術者として従事する場合、監理技術者講習を5年ごとに受講" },
     parts: [["1級一次", "1級 第一次検定"], ["1級二次", "1級 第二次検定"], ["2級一次", "2級 第一次検定"], ["2級二次", "2級 第二次検定"]],
     note: "令和8年度の申込は受付終了。1級の申込は例年2月（一次のみは4月上旬まで）。2級の日程は公式で確認。",
@@ -328,6 +418,7 @@ window.EXAMS = [
   {
     id: "eisei", name: "衛生管理者（第一種・第二種）", cat: "tech", org: "安全衛生技術試験協会", anytime: true,
     url: "https://www.exam.or.jp/",
+    guide: { rate: "第一種 約45%／第二種 約50%", hours: "50〜100時間" },
     prefUrl: { "愛知県": "https://www.exam.or.jp/center_chubu" },
     parts: [["第一種", "第一種衛生管理者"], ["第二種", "第二種衛生管理者"]],
     fees: [{ label: "", yen: 8800 }], feeNote: "令和5年6月時点",
@@ -338,6 +429,7 @@ window.EXAMS = [
   {
     id: "boiler", name: "ボイラー技士", cat: "tech", org: "安全衛生技術試験協会", anytime: true,
     url: "https://www.exam.or.jp/",
+    guide: { rate: "二級 約50〜60%", hours: "50〜100時間" },
     prefUrl: { "愛知県": "https://www.exam.or.jp/center_chubu" },
     parts: [["二級", "二級ボイラー技士"], ["一級", "一級ボイラー技士"], ["特級", "特級ボイラー技士"]],
     fees: [{ label: "", yen: 8800 }], feeNote: "令和5年6月時点",
@@ -345,8 +437,98 @@ window.EXAMS = [
     sessions: [],
   },
   {
+    id: "denken1", name: "第一種電気主任技術者（電験一種）", cat: "tech", org: "電気技術者試験センター",
+    url: "https://www.shiken.or.jp/",
+    guide: { rate: "最終合格 約3〜5%", hours: "3,000時間以上" },
+    parts: [["一次", "一次試験"], ["二次", "二次試験"]], partsNote: "一次試験は科目合格制（理論・電力・機械・法規、3年間有効）",
+    credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "一次試験の合格で、その年度と翌年度の二次試験は一次免除" }],
+    note: "年1回。申込は例年5〜6月、一次は8月下旬、二次は11月（電験二種と同日）。",
+    sessions: [
+      { label: "令和8年度 二次試験", parts: ["二次"], apply: ["2026-05-18", "2026-06-04"], exam: ["2026-11-15", "2026-11-15"], announceText: "2027年1月下旬（例年）",
+        detail: "一次試験（8/30）の合格者・一次免除者が対象" },
+    ],
+  },
+  {
+    id: "enekan", name: "エネルギー管理士", cat: "tech", org: "省エネルギーセンター",
+    url: "https://www.eccj.or.jp/mgr1/",
+    guide: { rate: "約30%", hours: "300〜500時間" },
+    parts: [["熱", "熱分野"], ["電気", "電気分野"]], partsNote: "科目合格制（合格科目は3年間免除）",
+    fees: [{ label: "", yen: 17000 }], feeNote: "令和7年度の金額",
+    note: "年1回・8月上旬の日曜。申込は例年4月上旬〜6月下旬。令和8年度は終了、令和9年度は日程発表待ち。",
+    sessions: [],
+  },
+  {
+    id: "reitou", name: "冷凍機械責任者（第三種・第二種・第一種）", cat: "tech", org: "高圧ガス保安協会",
+    url: "https://www.khk.or.jp/qualification/national_qualification/",
+    guide: { rate: "第三種 約40〜60%", hours: "第三種 50〜100時間" },
+    parts: [["第三種", "第三種冷凍機械責任者"], ["第二種", "第二種冷凍機械責任者"], ["第一種", "第一種冷凍機械責任者"]],
+    note: "高圧ガス製造保安責任者試験の一つ。年1回・例年11月中旬の日曜。申込は例年8〜9月（Web）。令和8年度の日程は公式で確認。",
+    sessions: [],
+  },
+  {
+    id: "kouatsu", name: "高圧ガス製造保安責任者（化学・機械）", cat: "tech", org: "高圧ガス保安協会",
+    url: "https://www.khk.or.jp/qualification/national_qualification/",
+    guide: { rate: "丙種化学 約30〜40%", hours: "50〜150時間" },
+    parts: [["丙種化学", "丙種化学（液石・特別）"], ["乙種機械", "乙種機械"], ["乙種化学", "乙種化学"], ["甲種機械", "甲種機械"], ["甲種化学", "甲種化学"]],
+    note: "年1回・例年11月中旬の日曜（冷凍機械と同日）。申込は例年8〜9月。令和8年度の日程は公式で確認。",
+    sessions: [],
+  },
+  {
+    id: "kyuusui", name: "給水装置工事主任技術者", cat: "tech", org: "給水工事技術振興財団",
+    url: "https://www.kyuukou.or.jp/",
+    guide: { rate: "約35%（令和7年度 34.8%）", hours: "50〜100時間" },
+    note: "年1回・例年10月下旬の日曜（令和7年度は10/26、名古屋会場あり）。受験には給水装置工事の実務経験3年以上が必要。令和7年度の合格率は34.8%。",
+    sessions: [],
+  },
+  {
+    id: "birukan", name: "建築物環境衛生管理技術者（ビル管）", cat: "tech", org: "日本建築衛生管理教育センター",
+    url: "https://www.jahmec.or.jp/",
+    guide: { rate: "約15〜20%", hours: "100〜300時間" },
+    fees: [{ label: "", yen: 17900 }],
+    note: "年1回・10月上旬の日曜。申込は例年5〜6月。受験には実務経験2年以上が必要。",
+    sessions: [
+      { label: "令和8年度", apply: ["2026-05-07", "2026-06-15"], exam: ["2026-10-04", "2026-10-04"], announce: "2026-11-10", detail: "" },
+    ],
+  },
+  {
+    id: "kenchikushi1", name: "一級建築士", cat: "tech", org: "建築技術教育普及センター",
+    url: "https://www.jaeic.or.jp/",
+    guide: { rate: "総合 約10%", hours: "約1,000時間以上" },
+    parts: [["学科", "学科試験"], ["製図", "設計製図試験"]],
+    credits: [{ parts: ["学科"], unless: ["製図"], years: 4, text: "学科に合格すると、その年を含め5回の試験のうち3回まで学科が免除（設計製図のみ受験）" }],
+    note: "年1回。申込は4月上旬（インターネット）、学科は7月下旬、設計製図は10月上旬。",
+    sessions: [
+      { label: "令和8年 学科", parts: ["学科"], apply: ["2026-04-01", "2026-04-14"], exam: ["2026-07-26", "2026-07-26"], announce: "2026-09-02", detail: "" },
+      { label: "令和8年 設計製図", parts: ["製図"], apply: ["2026-04-01", "2026-04-14"], exam: ["2026-10-11", "2026-10-11"], announce: "2026-12-23",
+        detail: "学科合格者・学科免除者が対象。合格発表は予定" },
+    ],
+  },
+  {
+    id: "kenchikushi2", name: "二級建築士", cat: "tech", org: "建築技術教育普及センター",
+    url: "https://www.jaeic.or.jp/",
+    guide: { rate: "総合 約20〜25%", hours: "約700時間" },
+    parts: [["学科", "学科試験"], ["製図", "設計製図試験"]],
+    credits: [{ parts: ["学科"], unless: ["製図"], years: 4, text: "学科に合格すると、その年を含め5回の試験のうち3回まで学科が免除（設計製図のみ受験）" }],
+    fees: [{ label: "", yen: 18500 }], feeNote: "別途決済手数料あり",
+    note: "年1回。申込は4月上旬（インターネット）、学科は7月上旬、設計製図は9月中旬。",
+    sessions: [
+      { label: "令和8年 学科", parts: ["学科"], apply: ["2026-04-01", "2026-04-14"], exam: ["2026-07-05", "2026-07-05"], announce: "2026-08-24", detail: "" },
+      { label: "令和8年 設計製図", parts: ["製図"], apply: ["2026-04-01", "2026-04-14"], exam: ["2026-09-13", "2026-09-13"], announce: "2026-12-03",
+        detail: "学科合格者・学科免除者が対象。合格発表は予定" },
+    ],
+  },
+  {
+    id: "tenken", name: "消防設備点検資格者", cat: "tech", org: "日本消防設備安全センター",
+    url: "https://www.fesc.or.jp/",
+    parts: [["第1種", "第1種（機械系）"], ["第2種", "第2種（電気系）"], ["特種", "特種（特殊消防用設備等）"]],
+    note: "試験ではなく講習の修了考査で取得。各地で年数回開催。受講には消防設備士・電気工事士などの資格や実務経験が必要。",
+    renewal: { years: 5, text: "免状の有効期間は5年（期限内に再講習を受けて更新）" },
+    sessions: [],
+  },
+  {
     id: "gijutsushi", name: "技術士", cat: "tech", org: "日本技術士会",
     url: "https://www.engineer.or.jp/c_topics/011/011780.html",
+    guide: { rate: "一次 約30〜50%／二次 約10%", hours: "二次 300〜500時間" },
     parts: [["一次", "第一次試験"], ["二次", "第二次試験"]],
     fees: [{ label: "第一次試験", yen: 13000 }, { label: "第二次試験（1部門）", yen: 20500 }],
     note: "第一次（11月）に合格すると第二次（翌年7月筆記・冬に口頭）へ。第一次は年1回、申込は6月。",
@@ -362,6 +544,7 @@ window.EXAMS = [
   {
     id: "gyosei", name: "行政書士", cat: "law", org: "行政書士試験研究センター",
     url: "https://gyosei-shiken.or.jp/",
+    guide: { rate: "約10〜13%", hours: "600〜1,000時間" },
     fees: [{ label: "", yen: 10400 }],
     note: "年1回・11月第2日曜。申込は例年7月下旬〜8月下旬。",
     sessions: [
@@ -372,6 +555,7 @@ window.EXAMS = [
   {
     id: "sharoushi", name: "社会保険労務士", cat: "law", org: "全国社会保険労務士会連合会 試験センター",
     url: "https://www.sharosi-siken.or.jp/",
+    guide: { rate: "約5〜7%", hours: "800〜1,000時間" },
     note: "年1回・8月下旬。次回（令和9年度）の日程は例年4月ごろ発表、申込は4月中旬〜5月末。",
     sessions: [
       { label: "令和8年度（第58回）", apply: ["2026-04-13", "2026-05-31"], exam: ["2026-08-23", "2026-08-23"], announce: "2026-10-01", detail: "" },
@@ -380,6 +564,7 @@ window.EXAMS = [
   {
     id: "shindanshi", name: "中小企業診断士", cat: "law", org: "中小企業診断協会",
     url: "https://www.j-smeca.jp/",
+    guide: { rate: "1次 約20〜30%／2次 約18%", hours: "約1,000時間" },
     credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "第1次試験の合格で、その年度と翌年度の第2次試験を受験できる" }],
     parts: [["一次", "第1次試験"], ["二次", "第2次試験（筆記）"]], partsNote: "第1次は科目合格制。2026年度から第2次の口述試験は廃止",
     fees: [{ label: "第1次試験", yen: 17200 }, { label: "第2次試験", yen: 15100 }],
@@ -393,6 +578,7 @@ window.EXAMS = [
   {
     id: "chintai", name: "賃貸不動産経営管理士", cat: "law", org: "賃貸不動産経営管理士協議会",
     url: "https://www.chintaikanrishi.jp/",
+    guide: { rate: "約25〜30%", hours: "100〜200時間" },
     fees: [{ label: "", yen: 12000 }], feeNote: "インターネット申込は事務手数料込み12,400円",
     note: "年1回・11月。申込は例年8月〜9月。",
     sessions: [
@@ -402,6 +588,7 @@ window.EXAMS = [
   {
     id: "kangyou", name: "管理業務主任者", cat: "law", org: "マンション管理業協会",
     url: "https://www.kanrikyo.or.jp/",
+    guide: { rate: "約20%", hours: "約300時間" },
     fees: [{ label: "", yen: 8900 }], feeNote: "Web申込は別途事務手数料297円",
     note: "年1回・12月第1日曜。申込は例年8月〜9月。",
     sessions: [
@@ -412,6 +599,7 @@ window.EXAMS = [
   {
     id: "bijihou", name: "ビジネス実務法務検定", cat: "law", org: "東京商工会議所",
     url: "https://kentei.tokyo-cci.or.jp/houmu/",
+    guide: { rate: "3級 約70〜80%／2級 約40〜50%", hours: "3級 30〜50時間／2級 60〜100時間" },
     parts: [["1級","1級"],["2級","2級"],["3級","3級"]],
     fees: [{ label: "2級（IBT）", yen: 7700 }, { label: "3級（IBT）", yen: 5500 }, { label: "1級（CBT利用料込み）", yen: 12100 }, { label: "2級（CBT利用料込み）", yen: 9900 }, { label: "3級（CBT利用料込み）", yen: 7700 }], feeNote: "2025年度の金額",
     note: "2・3級はIBT/CBT方式で年2シーズン。1級は年1回。",
@@ -423,6 +611,7 @@ window.EXAMS = [
   {
     id: "gkentei", name: "G検定（ジェネラリスト検定）", cat: "biz", org: "日本ディープラーニング協会",
     url: "https://www.jdla.org/certificate/general/",
+    guide: { rate: "約60〜80%", hours: "30〜60時間" },
     fees: [{ label: "一般", yen: 13200 }, { label: "学生", yen: 5500 }, { label: "再受験（一般）", yen: 6600 }],
     note: "オンライン（自宅）試験が中心。2027年は第1・3・5回に会場試験あり。",
     sessions: [
@@ -440,6 +629,7 @@ window.EXAMS = [
   {
     id: "eshikaku", name: "E資格（エンジニア資格）", cat: "biz", org: "日本ディープラーニング協会",
     url: "https://www.jdla.org/certificate/engineer/",
+    guide: { rate: "約70%", hours: "認定講座＋100時間前後" },
     fees: [{ label: "一般", yen: 33000 }, { label: "学生", yen: 22000 }, { label: "会員", yen: 27500 }],
     note: "受験には、試験日の過去2年以内に JDLA 認定プログラムを修了している必要あり。年2回（2月・8月）。",
     sessions: [
@@ -450,6 +640,7 @@ window.EXAMS = [
   {
     id: "dskentei", name: "データサイエンティスト検定（DS検定）", cat: "biz", org: "データサイエンティスト協会",
     url: "https://www.datascientist.or.jp/dskentei/",
+    guide: { rate: "約40〜50%", hours: "30〜60時間" },
     fees: [{ label: "一般", yen: 11000 }, { label: "学生", yen: 5500 }], feeNote: "税込（税抜 10,000円／5,000円）",
     note: "リテラシーレベル。CBT方式で年3回（3月・6月・11月ごろ）。",
     sessions: [
@@ -459,6 +650,7 @@ window.EXAMS = [
   {
     id: "genai", name: "生成AIパスポート", cat: "biz", org: "生成AI活用普及協会（GUGA）",
     url: "https://guga.or.jp/",
+    guide: { rate: "約75%", hours: "10〜20時間" },
     note: "自宅で受けるオンライン試験（IBT）。年数回実施。",
     sessions: [
       { label: "第5回", apply: ["2026-08-01", "2026-09-30"], exam: ["2026-10-01", "2026-10-31"], detail: "期間内に自宅で受験" },
@@ -467,6 +659,7 @@ window.EXAMS = [
   {
     id: "toukei", name: "統計検定", cat: "biz", org: "統計質保証推進協会", anytime: true,
     url: "https://www.toukei-kentei.jp/",
+    guide: { rate: "2級 約30〜50%／3級 約60%", hours: "2級 50〜100時間" },
     parts: [["準1級", "準1級"], ["2級", "2級"], ["3級", "3級"], ["4級", "4級"]],
     note: "準1級〜4級などは CBT 方式で随時受験できる。",
     sessions: [],
