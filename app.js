@@ -21,7 +21,7 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県" };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {} };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
@@ -46,11 +46,13 @@
   let SESSIONS = [];
   function rebuild() {
     SESSIONS = ALL_SESSIONS.filter((s) => {
+      if (isPassed(s.exam_)) return false;
       if (s.pref) return s.pref === store.pref;
       if (s.fallback) return !ALL_SESSIONS.some((o) => o.exam_ === s.exam_ && o.pref === store.pref);
       return true;
     });
   }
+  const isPassed = (ex) => !!(store.passed && store.passed[ex.id]);
   rebuild();
   const noteOf = (ex) => (ex.prefNote && ex.prefNote[store.pref]) || ex.note;
   const urlOf = (ex) => (ex.prefUrl && ex.prefUrl[store.pref]) || ex.url;
@@ -77,7 +79,8 @@
   const starBtn = (key) => `<button class="star ${isStar(key) ? "is-on" : ""}" data-star="${key}" aria-label="受験予定に追加" title="受験予定に追加">${isStar(key) ? "★" : "☆"}</button>`;
   const catStyle = (ex) => `style="--cat:${CATS[ex.cat].color}"`;
   const subLine = (ex) => `<div class="sub">${esc(CATS[ex.cat].label)} ・ ${esc(ex.org)}</div>`;
-  const officialLink = (ex) => `<div class="links"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a></div>`;
+  const officialLink = (ex) => `<div class="links"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a>
+    <button class="pass-btn" data-pass="${ex.id}" title="合格した資格を表示から外します">✓ 合格済みにする</button></div>`;
 
   function sessionCard(s) {
     const ex = s.exam_, st = statusOf(s);
@@ -137,7 +140,7 @@
     const list = SESSIONS.filter((s) => catOn(s.exam_.cat));
     const open = list.filter((s) => statusOf(s).code === "open").sort((a, b) => a.apply[1].localeCompare(b.apply[1]));
     const before = list.filter((s) => statusOf(s).code === "before").sort((a, b) => a.apply[0].localeCompare(b.apply[0]));
-    const anytime = EXAMS.filter((e) => !hasSessions(e) && catOn(e.cat));
+    const anytime = EXAMS.filter((e) => !hasSessions(e) && catOn(e.cat) && !isPassed(e));
 
     let h = `<h2 class="section-title">いま申込できる（締切が近い順）</h2>`;
     h += open.length ? open.map(sessionCard).join("") : `<div class="empty">受付中の試験はありません</div>`;
@@ -162,7 +165,7 @@
     let h = "";
     for (const [k, c] of Object.entries(CATS)) {
       if (!catOn(k)) continue;
-      const exams = EXAMS.filter((e) => e.cat === k);
+      const exams = EXAMS.filter((e) => e.cat === k && !isPassed(e));
       if (!exams.length) continue;
       h += `<h2 class="section-title">${esc(c.label)}</h2>`;
       for (const ex of exams) {
@@ -274,13 +277,14 @@
 
   // ---------- 受験予定 ----------
   function renderPlan() {
-    const starredSessions = ALL_SESSIONS.filter((s) => isStar(s.key));
-    const starredAny = EXAMS.filter((e) => isStar(`${e.id}#any`));
+    const starredSessions = ALL_SESSIONS.filter((s) => isStar(s.key) && !isPassed(s.exam_));
+    const starredAny = EXAMS.filter((e) => isStar(`${e.id}#any`) && !isPassed(e));
     const examIds = [...new Set([...starredSessions.map((s) => s.exam_.id), ...starredAny.map((e) => e.id)])];
     document.getElementById("planCount").textContent = starredSessions.length + starredAny.length || "";
 
+    const passedHtml = passedSection();
     if (!examIds.length) {
-      document.getElementById("view-plan").innerHTML = `<div class="empty">☆を付けた試験がここに並びます。<br>「締切が近い」や「一覧」で受けたい回の☆を押してください。</div>`;
+      document.getElementById("view-plan").innerHTML = passedHtml + `<div class="empty">☆を付けた試験がここに並びます。<br>「締切が近い」や「一覧」で受けたい回の☆を押してください。</div>`;
       return;
     }
     const nextDate = (s) => { const st = statusOf(s); return st.code === "before" ? s.apply[0] : st.code === "open" ? s.apply[1] : s.exam[0]; };
@@ -302,7 +306,28 @@
         <textarea class="memo" data-memo="${id}" placeholder="教材、勉強の進み具合、受験料など">${esc(store.memo[id] || "")}</textarea></article>`;
     }
     if (past.length) h += `<h2 class="section-title">終了した回</h2>` + past.map(sessionCard).join("");
-    document.getElementById("view-plan").innerHTML = h;
+    document.getElementById("view-plan").innerHTML = h + passedHtml;
+  }
+
+  function passedSection() {
+    const list = EXAMS.filter(isPassed).sort((a, b) => store.passed[b.id].localeCompare(store.passed[a.id]));
+    if (!list.length) return "";
+    return `<h2 class="section-title">合格済み（表示から外している資格）</h2>
+      <div class="card passed-list">${list.map((ex) => `<div class="passed-row">
+        <span class="dot" style="background:${CATS[ex.cat].color}"></span>
+        <span class="passed-name">${esc(ex.name)}</span>
+        <button class="btn ghost small" data-unpass="${ex.id}">戻す</button></div>`).join("")}</div>`;
+  }
+
+  // 下部に出す「元に戻す」通知
+  let toastTimer;
+  function toast(msg, undoId) {
+    let el = document.getElementById("toast");
+    if (!el) { el = document.createElement("div"); el.id = "toast"; el.className = "toast"; document.body.appendChild(el); }
+    el.innerHTML = `<span>${esc(msg)}</span>${undoId ? `<button data-unpass="${undoId}">元に戻す</button>` : ""}`;
+    el.classList.add("is-on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("is-on"), 5000);
   }
 
   function downloadIcs() {
@@ -356,6 +381,20 @@
       else store.cats = store.cats.includes(c) ? store.cats.filter((x) => x !== c) : [...store.cats, c];
       if (store.cats.length === Object.keys(CATS).length) store.cats = [];
       save(); renderAll(); return;
+    }
+    if (t.dataset.pass) {
+      const ex = EXAMS.find((e) => e.id === t.dataset.pass);
+      store.passed = store.passed || {};
+      store.passed[ex.id] = TODAY;
+      save(); rebuild(); renderAll();
+      toast(`${ex.name} を合格済みにしました`, ex.id);
+      return;
+    }
+    if (t.dataset.unpass) {
+      delete store.passed[t.dataset.unpass];
+      save(); rebuild(); renderAll();
+      const el = document.getElementById("toast"); if (el) el.classList.remove("is-on");
+      return;
     }
     if (t.dataset.far) { showFar = true; renderDeadline(); return; }
     if (t.dataset.past) {
