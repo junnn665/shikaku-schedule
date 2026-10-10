@@ -33,7 +33,8 @@ def log(*a):
 
 
 def nfkc(s: str) -> str:
-    return unicodedata.normalize("NFKC", s)
+    # 波ダッシュ（〜）は NFKC で変換されないのでそろえる
+    return unicodedata.normalize("NFKC", s).replace("〜", "~")
 
 
 # ───────────────────────── 消防試験研究センター ─────────────────────────
@@ -145,7 +146,7 @@ def shoubo_sessions(rows: list[dict]) -> list[dict]:
 # ───────────────────────── TOEIC ─────────────────────────
 TOEIC_EXAM_RE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*実施")
 TOEIC_APPLY_RE = re.compile(
-    r"(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*\d{1,2}:\d{2}\s*~\s*(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*(\d{1,2}:\d{2})"
+    r"(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*\d{1,2}:\d{2}\s*[~〜～\-－]\s*(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*(\d{1,2}:\d{2})"
 )
 
 
@@ -181,13 +182,25 @@ def parse_toeic_html(src: str) -> list[dict]:
     return [result[k] for k in sorted(result)]
 
 
+def warn(msg: str):
+    """GitHub Actions の画面に注意として出す。"""
+    print(f"::warning::{msg}")
+
+
 def fetch_toeic() -> list[dict]:
     import requests
 
     r = requests.get(TOEIC_URL, headers=UA, timeout=60)
     r.raise_for_status()
-    r.encoding = r.apparent_encoding or "utf-8"
-    return parse_toeic_html(r.text)
+    r.encoding = "utf-8"
+    got = parse_toeic_html(r.text)
+    if len(got) < 3:
+        text = nfkc(html.unescape(re.sub(r"<[^>]+>", " ", r.text)))
+        text = re.sub(r"\s+", " ", text)
+        i = text.find("実施")
+        warn(f"TOEIC: status={r.status_code} len={len(r.text)} exam={len(TOEIC_EXAM_RE.findall(text))} "
+             f"apply={len(TOEIC_APPLY_RE.findall(text))} sample={text[max(0, i - 120):i + 200]!r}")
+    return got
 
 
 # ───────────────────────── 書き出し ─────────────────────────
@@ -215,9 +228,11 @@ def main() -> int:
             sessions = fn()
         except Exception as e:
             log(f"  FAILED: {e}")
+            warn(f"{key}: 取り込み失敗 {e}")
             continue
         if len(sessions) < minimum:
             log(f"  too few ({len(sessions)} < {minimum}); keep previous")
+            warn(f"{key}: 件数が少ないため前回データを維持 ({len(sessions)}件)")
             continue
         data[key] = sessions
         data["sources"][key] = TODAY.isoformat()
