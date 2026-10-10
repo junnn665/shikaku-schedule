@@ -21,7 +21,7 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, feeChoice: {}, updatedAt: 0 };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, updatedAt: 0 };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
@@ -51,13 +51,31 @@
   let SESSIONS = [];
   function rebuild() {
     SESSIONS = ALL_SESSIONS.filter((s) => {
-      if (isPassed(s.exam_)) return false;
+      if (sessionDone(s)) return false;
       if (s.pref) return s.pref === store.pref;
       if (s.fallback) return !ALL_SESSIONS.some((o) => o.exam_ === s.exam_ && o.pref === store.pref);
       return true;
     });
   }
-  const isPassed = (ex) => !!(store.passed && store.passed[ex.id]);
+  // 合格の記録：区分（parts）がある資格は区分ごと、ない資格は資格ごと
+  const partIds = (ex) => (ex.parts ? ex.parts.map((p) => p[0]) : null);
+  const partName = (ex, id) => { const p = (ex.parts || []).find((q) => q[0] === id); return p ? p[1] : id; };
+  const passedPartsOf = (ex) => (store.passedParts && store.passedParts[ex.id]) || {};
+  const isPassed = (ex) => {
+    if (store.passed && store.passed[ex.id]) return true;
+    const ids = partIds(ex);
+    return !!ids && ids.every((id) => passedPartsOf(ex)[id]);
+  };
+  const sessionParts = (s) => s.parts || partIds(s.exam_) || [];
+  // その回で受けられる区分がすべて合格済みなら、その回はもう不要
+  const sessionDone = (s) => isPassed(s.exam_) || (!!s.exam_.parts && sessionParts(s).length > 0 && sessionParts(s).every((id) => passedPartsOf(s.exam_)[id]));
+  // 以前の「資格まるごと合格」の記録を区分ごとの記録に移す
+  EXAMS.forEach((ex) => {
+    if (ex.parts && store.passed && store.passed[ex.id]) {
+      store.passedParts[ex.id] = Object.fromEntries(partIds(ex).map((id) => [id, store.passed[ex.id]]));
+      delete store.passed[ex.id];
+    }
+  });
   rebuild();
   const noteOf = (ex) => (ex.prefNote && ex.prefNote[store.pref]) || ex.note;
   const urlOf = (ex) => (ex.prefUrl && ex.prefUrl[store.pref]) || ex.url;
@@ -91,7 +109,20 @@
   const catStyle = (ex) => `style="--cat:${CATS[ex.cat].color}"`;
   const subLine = (ex) => `<div class="sub">${esc(CATS[ex.cat].label)} ・ ${esc(ex.org)}</div>`;
   const officialLink = (ex) => `<div class="links"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a>
-    <button class="pass-btn" data-pass="${ex.id}" title="合格した資格を表示から外します">✓ 合格済みにする</button></div>`;
+    ${passBtn(ex)}</div>`;
+  function passBtn(ex) {
+    if (!ex.parts) return `<button class="pass-btn" data-pass="${ex.id}" title="合格した資格を表示から外します">✓ 合格済みにする</button>`;
+    const n = Object.keys(passedPartsOf(ex)).length;
+    return `<button class="pass-btn ${n ? "has" : ""}" data-passparts="${ex.id}" title="区分ごとに合格を記録します">✓ 合格を記録${n ? `（${n}/${ex.parts.length}）` : ""}</button>`;
+  }
+  // 回で受けられる区分のチップ（合格済みは ✓）
+  function partChips(s) {
+    const ex = s.exam_;
+    if (!ex.parts) return "";
+    const ids = sessionParts(s), done = passedPartsOf(ex);
+    if (ids.length <= 1 && !Object.keys(done).length) return "";
+    return `<div class="chips">${ids.map((id) => `<span class="pchip ${done[id] ? "done" : ""}" title="${esc(partName(ex, id))}">${done[id] ? "✓ " : ""}${esc(id)}</span>`).join("")}</div>`;
+  }
 
   const yen = (n) => n.toLocaleString("ja-JP") + "円";
   const announceOf = (s) => (s.announce ? fmt(s.announce) : s.announceText || "");
@@ -123,6 +154,7 @@
           ${announceOf(s) ? `<dt>${announceLabel(s) === "合格発表" ? "合格発表" : "結果発表"}</dt><dd>${esc(announceOf(s))}</dd>` : ""}
           <dt>受験料</dt><dd>${esc(feeText(ex))}</dd>
         </dl>
+        ${partChips(s)}
         ${s.detail ? `<div class="detail">${esc(s.detail)}</div>` : ""}
         ${officialLink(ex)}
       </article>`;
@@ -212,6 +244,7 @@
                     <div class="session-dates">申込 <b>${s.apply ? fmtRange(s.apply) : "要確認"}</b></div>
                     <div class="session-dates">試験 <b>${fmtRange(s.exam)}</b></div>
                     ${announceOf(s) ? `<div class="session-dates">発表 <b>${esc(announceOf(s))}</b></div>` : ""}
+                    ${partChips(s)}
                     ${s.detail ? `<div class="detail">${esc(s.detail)}</div>` : ""}
                   </div></div>`;
               }).join("") : `<div class="detail" style="padding:10px 0">今後の予定は未掲載です</div>`}
@@ -306,7 +339,7 @@
 
   // ---------- 受験予定 ----------
   function renderPlan() {
-    const starredSessions = ALL_SESSIONS.filter((s) => isStar(s.key) && !isPassed(s.exam_));
+    const starredSessions = ALL_SESSIONS.filter((s) => isStar(s.key) && !sessionDone(s));
     const starredAny = EXAMS.filter((e) => isStar(`${e.id}#any`) && !isPassed(e));
     const examIds = [...new Set([...starredSessions.map((s) => s.exam_.id), ...starredAny.map((e) => e.id)])];
     document.getElementById("planCount").textContent = starredSessions.length + starredAny.length || "";
@@ -364,28 +397,68 @@
   }
 
   function passedSection() {
-    const list = EXAMS.filter(isPassed).sort((a, b) => store.passed[b.id].localeCompare(store.passed[a.id]));
+    const list = EXAMS.filter((ex) => (store.passed && store.passed[ex.id]) || Object.keys(passedPartsOf(ex)).length);
     if (!list.length) return "";
-    return `<h2 class="section-title">合格済み（表示から外している資格）</h2>
-      <div class="card passed-list">${list.map((ex) => `<div class="passed-row">
-        <span class="dot" style="background:${CATS[ex.cat].color}"></span>
-        <span class="passed-name">${esc(ex.name)}</span>
-        <button class="btn ghost small" data-unpass="${ex.id}">戻す</button></div>`).join("")}</div>`;
+    const latest = (ex) => store.passed[ex.id] || Object.values(passedPartsOf(ex)).sort().pop() || "";
+    list.sort((a, b) => latest(b).localeCompare(latest(a)));
+    return `<h2 class="section-title">合格の記録</h2>
+      <div class="card passed-list">${list.map((ex) => {
+        const parts = ex.parts ? Object.keys(passedPartsOf(ex)) : [];
+        const all = isPassed(ex);
+        return `<div class="passed-row">
+          <span class="dot" style="background:${CATS[ex.cat].color}"></span>
+          <span class="passed-name">${esc(ex.name)}
+            <small>${ex.parts ? (all ? "全区分合格（表示から外しています）" : parts.map((id) => esc(partName(ex, id))).join("・") + " 合格") : "合格済み（表示から外しています）"}</small></span>
+          ${ex.parts ? `<button class="btn ghost small" data-passparts="${ex.id}">編集</button>` : `<button class="btn ghost small" data-unpass="${ex.id}">戻す</button>`}
+        </div>`;
+      }).join("")}</div>`;
+  }
+
+  // 区分ごとの合格を記録するダイアログ
+  let passEditing = null;
+  function openPassDialog(id) {
+    const ex = EXAMS.find((e) => e.id === id);
+    passEditing = ex;
+    const done = passedPartsOf(ex);
+    document.getElementById("passTitle").textContent = `${ex.name} の合格を記録`;
+    document.getElementById("passBody").innerHTML = `
+      <p class="hint">合格した区分にチェックしてください。その区分しかない回は表示から外れます。すべてにチェックすると資格ごと表示から外れます。${ex.partsNote ? `<br>${esc(ex.partsNote)}` : ""}</p>
+      <div class="part-grid">${ex.parts.map(([pid, label]) => `<label class="part-check"><input type="checkbox" value="${esc(pid)}" ${done[pid] ? "checked" : ""}><span>${esc(label)}</span></label>`).join("")}</div>
+      <div class="plan-actions" style="margin-top:14px"><button class="btn" id="passSave">保存</button><button class="btn ghost" id="passCancel">キャンセル</button></div>`;
+    document.getElementById("passDlg").showModal();
+  }
+  function savePassDialog() {
+    const ex = passEditing; if (!ex) return;
+    const before = JSON.stringify(passedPartsOf(ex));
+    const prev = passedPartsOf(ex);
+    const next = {};
+    document.querySelectorAll("#passBody input[type=checkbox]").forEach((c) => { if (c.checked) next[c.value] = prev[c.value] || TODAY; });
+    if (Object.keys(next).length) store.passedParts[ex.id] = next; else delete store.passedParts[ex.id];
+    document.getElementById("passDlg").close();
+    save(); rebuild(); renderAll();
+    const n = Object.keys(next).length;
+    toast(n ? `${ex.name}：${n}区分を合格済みにしました` : `${ex.name} の合格記録を消しました`, () => {
+      const b = JSON.parse(before);
+      if (Object.keys(b).length) store.passedParts[ex.id] = b; else delete store.passedParts[ex.id];
+      save(); rebuild(); renderAll();
+    });
   }
 
   // 下部に出す「元に戻す」通知
   let toastTimer;
-  function toast(msg, undoId) {
+  let toastUndo = null;
+  function toast(msg, undo) {
+    toastUndo = typeof undo === "function" ? undo : undo ? () => { delete store.passed[undo]; save(); rebuild(); renderAll(); } : null;
     let el = document.getElementById("toast");
     if (!el) { el = document.createElement("div"); el.id = "toast"; el.className = "toast"; document.body.appendChild(el); }
-    el.innerHTML = `<span>${esc(msg)}</span>${undoId ? `<button data-unpass="${undoId}">元に戻す</button>` : ""}`;
+    el.innerHTML = `<span>${esc(msg)}</span>${toastUndo ? `<button id="toastUndo">元に戻す</button>` : ""}`;
     el.classList.add("is-on");
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => el.classList.remove("is-on"), 5000);
   }
 
   function downloadIcs() {
-    const ss = ALL_SESSIONS.filter((s) => isStar(s.key) && !isPassed(s.exam_) && statusOf(s).code !== "past");
+    const ss = ALL_SESSIONS.filter((s) => isStar(s.key) && !sessionDone(s) && statusOf(s).code !== "past");
     const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//shikaku-schedule//JA", "CALSCALE:GREGORIAN"];
     const stamp = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
     const ev = (uid, date, endEx, summary, desc) => {
@@ -414,7 +487,7 @@
   const SYNC_KEY = "shikaku-schedule:sync";
   const GIST_DESC = "shikaku-schedule state";
   const GIST_FILE = "state.json";
-  const SYNCED = ["stars", "memo", "passed", "feeChoice", "pref", "updatedAt"];
+  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "pref", "updatedAt"];
   let sync = {};
   try { sync = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}"); } catch (e) { /* 無視 */ }
   const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) { /* 無視 */ } };
@@ -518,7 +591,7 @@
     const connected = !!sync.gistId;
     box.innerHTML = `
       <h3>端末間の同期</h3>
-      <p class="hint">☆・メモ・合格済み・受験料の選択・受験地を、スマホとPCで共有します。保存先はあなたの GitHub アカウントの<b>シークレット Gist</b>（URLを知っている人だけが見られる非公開メモ）です。</p>
+      <p class="hint">☆・メモ・合格の記録・受験料の選択・受験地を、スマホとPCで共有します。保存先はあなたの GitHub アカウントの<b>シークレット Gist</b>（URLを知っている人だけが見られる非公開メモ）です。</p>
       <p class="sync-state"><span id="syncDot" class="sync-dot"></span><span id="syncStatus">${esc(syncStatus)}</span></p>
       ${connected ? `
         <dl class="rows"><dt>Gist ID</dt><dd><code id="gistId">${esc(sync.gistId)}</code> <button class="btn ghost small" data-copy="gistId">コピー</button></dd></dl>
@@ -571,6 +644,15 @@
       store.passed[ex.id] = TODAY;
       save(); rebuild(); renderAll();
       toast(`${ex.name} を合格済みにしました`, ex.id);
+      return;
+    }
+    if (t.dataset.passparts) { openPassDialog(t.dataset.passparts); return; }
+    if (t.id === "passSave") { savePassDialog(); return; }
+    if (t.id === "passCancel") { document.getElementById("passDlg").close(); return; }
+    if (t.id === "toastUndo") {
+      if (toastUndo) toastUndo();
+      toastUndo = null;
+      document.getElementById("toast").classList.remove("is-on");
       return;
     }
     if (t.dataset.unpass) {

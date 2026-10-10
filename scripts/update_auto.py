@@ -123,10 +123,11 @@ def shoubo_sessions(rows: list[dict]) -> list[dict]:
             continue
         seen.add(key)
         short = r["pref"] if r["pref"] == "北海道" else r["pref"][:-1]
-        detail = [r["types"]] if r["types"] else []
+        parts = [t for t in r["types"].split() if re.fullmatch(r"甲特|甲\d?|乙\d|丙", t)]
+        detail = [] if parts else ([r["types"]] if r["types"] else [])
         if r["paper"] and r["paper"] != r["apply"]:
             detail.append(f"書面申請 {r['paper'][0]:%-m/%-d}〜{r['paper'][1]:%-m/%-d}")
-        elif not r["paper"]:
+        elif not r["paper"] and "電子申請" not in r["note"]:
             detail.append("電子申請のみ")
         if r["note"]:
             detail.append(r["note"])
@@ -138,6 +139,7 @@ def shoubo_sessions(rows: list[dict]) -> list[dict]:
             "exam": [r["exam"].isoformat()] * 2,
             "detail": " ／ ".join(detail),
             **({"announce": r["announce"].isoformat()} if r["announce"] else {}),
+            **({"parts": parts} if parts else {}),
         })
     return out
 

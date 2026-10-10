@@ -44,6 +44,11 @@
     <div id="settingsBody"></div>
   </dialog>
 
+  <dialog id="passDlg" class="settings">
+    <div class="settings-head"><h2 id="passTitle">合格を記録</h2><button class="icon-btn" id="passCancelX" aria-label="閉じる" onclick="this.closest('dialog').close()">✕</button></div>
+    <div id="passBody" style="padding:4px 18px 18px"></div>
+  </dialog>
+
   <footer class="wrap site-footer">
     <p>情報確認日：<span id="checked"></span>。日程は変更される場合があります。申込前に必ず各公式サイトで確認してください。</p>
     <p id="autoInfo"></p>

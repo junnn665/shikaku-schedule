@@ -70,10 +70,19 @@ async function main() {
   if (!state) { console.log("STATE_GIST_ID が未設定のため通知しません"); return; }
   const stars = state.stars || {};
   const passed = state.passed || {};
+  const passedParts = state.passedParts || {};
+  // サイトと同じ判定：その回で受けられる区分がすべて合格済みなら通知しない
+  const done = (s) => {
+    if (passed[s.ex.id]) return true;
+    if (!s.ex.parts) return false;
+    const ids = s.parts || s.ex.parts.map((p) => p[0]);
+    const pp = passedParts[s.ex.id] || {};
+    return ids.length > 0 && ids.every((id) => pp[id]);
+  };
 
   const items = [];
   for (const s of SESSIONS) {
-    if (!stars[s.key] || passed[s.ex.id]) continue;
+    if (!stars[s.key] || done(s)) continue;
     for (const ev of eventsFor(s)) items.push({ ...ev, s });
   }
   if (!items.length) { console.log(`${TODAY}: 通知はありません`); return; }

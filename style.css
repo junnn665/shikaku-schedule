@@ -272,3 +272,14 @@ button { font: inherit; color: inherit; }
 .token-row { display: flex; gap: 8px; margin-top: 8px; }
 .token-row input { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink); }
 code { font-size: 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; word-break: break-all; }
+
+/* pass parts */
+.pass-btn.has { color: var(--open); border-color: var(--open); }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+.pchip { font-size: 11px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line); color: var(--ink-2); background: var(--surface-2); }
+.pchip.done { color: var(--open); background: var(--open-bg); border-color: transparent; text-decoration: line-through; text-decoration-thickness: 1px; }
+.passed-name small { display: block; color: var(--ink-3); font-size: 12px; }
+.part-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 6px; margin-top: 10px; }
+.part-check { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-size: 14px; background: var(--surface-2); }
+.part-check:has(input:checked) { border-color: var(--open); background: var(--open-bg); }
+.part-check input { accent-color: var(--open); width: 16px; height: 16px; }
