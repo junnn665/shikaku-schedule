@@ -83,12 +83,19 @@ async function main() {
   const items = [];
   for (const s of SESSIONS) {
     if (!stars[s.key] || done(s)) continue;
+    if (env.TEST_ALL) {
+      // テスト送信：☆を付けた今後の回の次の予定を1件ずつ
+      const next = s.apply && s.apply[1] >= TODAY ? `申込締切 ${md(s.apply[1])}` : s.exam[0] >= TODAY ? `試験 ${md(s.exam[0])}` : null;
+      if (next) items.push({ pri: 3, text: `（テスト）次の予定：${next}`, s });
+      continue;
+    }
     for (const ev of eventsFor(s)) items.push({ ...ev, s });
   }
+  console.log(`☆ ${Object.keys(stars).length}件 / 合格記録 ${Object.keys(passedParts).length + Object.keys(passed).length}件を読み込み`);
   if (!items.length) { console.log(`${TODAY}: 通知はありません`); return; }
   items.sort((a, b) => a.pri - b.pri);
 
-  const title = `【資格】${md(TODAY)} のお知らせ ${items.length}件` + (items.some((i) => i.pri === 0) ? "（締切間近あり）" : "");
+  const title = (env.TEST_ALL ? "【テスト】" : "") + `【資格】${md(TODAY)} のお知らせ ${items.length}件` + (items.some((i) => i.pri === 0) ? "（締切間近あり）" : "");
   const lines = items.map(({ s, text }) => `- **${s.ex.name}**（${s.label}）\n  ${text}\n  [公式ページ](${s.ex.url})`);
   const body = `${lines.join("\n")}\n\n[資格スケジュール帳を開く](${SITE}#plan)`;
   const plain = items.map(({ s, text }) => `・${s.ex.name}：${text}`).join("\n");
