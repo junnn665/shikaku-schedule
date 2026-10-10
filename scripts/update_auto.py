@@ -144,10 +144,9 @@ def shoubo_sessions(rows: list[dict]) -> list[dict]:
 
 
 # ───────────────────────── TOEIC ─────────────────────────
-TOEIC_EXAM_RE = re.compile(r"(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*実施")
-TOEIC_APPLY_RE = re.compile(
-    r"(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*\d{1,2}:\d{2}\s*[~〜～\-－]\s*(\d{4})年(\d{1,2})月(\d{1,2})日\s*\(.\)\s*(\d{1,2}:\d{2})"
-)
+_D = r"(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日\s*\(\s*.\s*\)"
+TOEIC_EXAM_RE = re.compile(_D + r"\s*実施")
+TOEIC_APPLY_RE = re.compile(_D + r"\s*\d{1,2}:\d{2}\s*[~〜～\-－]\s*" + _D + r"\s*(\d{1,2}:\d{2})")
 
 
 def parse_toeic_html(src: str) -> list[dict]:
