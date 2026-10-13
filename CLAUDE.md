@@ -7,6 +7,9 @@
   危険物取扱者・消防設備士（全都道府県）と TOEIC はここから表示される（`data.js` 側の同じ資格の回は自動データがないときの予備）。
   自動取り込みが壊れている（`data_auto.js` の `sources` の日付が古い、Actions が失敗している）場合は `scripts/update_auto.py` を直す。
 
+- `watch_state.json`：`.github/workflows/update.yml` の監視記録（自動生成。手で編集しない）。
+  GitHub Actions 上で Claude が動くときは、変化のあったページが `changed.md` に書かれている。
+
 ## 定期更新でやること
 
 1. `data.js` の各資格について、公式サイト（なければ大手資格学校のページ）で次を確認する。

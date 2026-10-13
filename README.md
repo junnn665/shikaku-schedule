@@ -52,6 +52,15 @@
 
 取り込みに失敗したときは前回のデータを残します。Actions タブの「試験日程の自動取り込み」→ Run workflow で手動実行もできます。
 
+## 公式ページの監視と日程更新（GitHub Actions）
+
+`.github/workflows/update.yml` が毎日 6:37（日本時間）に動きます。
+
+1. **監視（無料）**：`data.js` の各資格の公式ページを取得し、「日付」と「試験・申込などの言葉」を含む行を記録（`watch_state.json`）。前回になかった行が出てきたら、Issue で知らせます。
+2. **Claude による更新（任意・API 利用料あり）**：Settings → Secrets and variables → Actions → **Secrets** に `ANTHROPIC_API_KEY` を登録すると、変化があった日と毎週月曜に、Claude が公式ページを確認して `data.js` を更新・コミットし、Issue に結果を書いて閉じます。
+
+Actions タブの「公式ページの監視と日程更新」→ Run workflow で手動実行もできます（`full`：全資格を Claude が確認、`test`：監視の通知テスト）。
+
 ## 日程の更新方法（手動）
 
 データはすべて `data.js` にあります。新しい回を足すときは該当資格の `sessions` に1行追加するだけです。

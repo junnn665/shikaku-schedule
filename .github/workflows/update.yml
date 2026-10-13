@@ -1,0 +1,203 @@
+name: 公式ページの監視と日程更新
+
+# 1. watch  ：data.js の各資格の公式ページを見て、日程らしき行が新しく出てきたら Issue で知らせる（無料）
+# 2. claude ：Secrets に ANTHROPIC_API_KEY があるときだけ、Claude が公式ページを確認して data.js を更新・コミットする
+#             （変化があった日と、毎週月曜の定期確認で動く。API 利用料がかかる）
+
+on:
+  schedule:
+    - cron: "37 21 * * *"   # 毎日 6:37（日本時間）。月曜は Claude による全体確認も行う
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "実行内容"
+        type: choice
+        default: watch
+        options:
+          - watch        # 監視だけ（変化があり、API キーがあれば Claude も動く）
+          - full         # Claude に全資格を確認させる（API キーが必要）
+          - test         # 監視のテスト（ダミーの変化で Issue を作る）
+
+permissions:
+  contents: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: update-official
+  cancel-in-progress: false
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      changed: ${{ steps.watch.outputs.changed }}
+      issue: ${{ steps.issue.outputs.number }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - run: pip install requests
+
+      - name: data.js から資格と公式ページの一覧を作る
+        run: |
+          node -e '
+            global.window = {};
+            require("./data.js");
+            const list = window.EXAMS.map((e) => ({ id: e.id, name: e.name, url: e.url }));
+            require("fs").writeFileSync("exams.json", JSON.stringify(list));
+          '
+
+      - name: 公式ページを確認
+        id: watch
+        env:
+          WATCH_TEST: ${{ inputs.mode == 'test' && '1' || '' }}
+        run: python scripts/watch_pages.py exams.json
+
+      - name: 変化を Issue で知らせる
+        id: issue
+        if: steps.watch.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        run: |
+          {
+            echo "@${{ github.repository_owner }}"
+            echo
+            echo "公式ページに、新しい日程らしき記載が見つかりました。"
+            if [ "$HAS_KEY" = "true" ]; then
+              echo "このあと Claude が内容を確認して data.js を更新します（更新したらこの Issue にコメントして閉じます）。"
+            else
+              echo "サイトに反映するには data.js を更新してください（ANTHROPIC_API_KEY を登録すると自動で反映できます）。"
+            fi
+            echo
+            sed '1d' changed.md
+          } > issue.md
+          title="【資格】公式ページの日程が更新されたかも（${{ steps.watch.outputs.count }}件）"
+          [ "${{ inputs.mode }}" = "test" ] && title="【テスト】$title"
+          url=$(gh issue create --title "$title" --body-file issue.md --assignee "${{ github.repository_owner }}")
+          echo "number=${url##*/}" >> "$GITHUB_OUTPUT"
+
+      - name: 監視の記録をコミット
+        run: |
+          rm -f exams.json issue.md
+          git add watch_state.json
+          if git diff --cached --quiet; then echo "変更なし"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "公式ページの監視記録を更新（$(TZ=Asia/Tokyo date +%Y-%m-%d)）"
+          git pull --rebase origin main
+          git push
+
+      - name: 変化の内容を次のジョブへ渡す
+        if: steps.watch.outputs.changed == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: changed
+          path: changed.md
+
+  claude:
+    needs: watch
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+    steps:
+      - name: 実行するか判定
+        id: gate
+        run: |
+          run=false
+          # 変化があった・手動で full・月曜（日本時間）の定期確認 のどれか、かつ API キーがあるとき
+          dow=$(TZ=Asia/Tokyo date +%u)
+          if [ "${{ needs.watch.outputs.changed }}" = "true" ] || [ "${{ inputs.mode }}" = "full" ] || { [ "${{ github.event_name }}" = "schedule" ] && [ "$dow" = "1" ]; }; then
+            run=true
+          fi
+          if [ "$HAS_KEY" != "true" ]; then
+            [ "$run" = "true" ] && echo "::notice::ANTHROPIC_API_KEY が未登録のため、Claude による更新はスキップしました"
+            run=false
+          fi
+          [ "${{ inputs.mode }}" = "test" ] && run=false
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          ref: main
+
+      - name: 最新の main を取得（監視記録のコミット後）
+        if: steps.gate.outputs.run == 'true'
+        run: git pull --rebase origin main
+
+      - uses: actions/download-artifact@v4
+        if: steps.gate.outputs.run == 'true' && needs.watch.outputs.changed == 'true'
+        with:
+          name: changed
+
+      - uses: actions/setup-node@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          node-version: "22"
+
+      - name: Claude が公式ページを確認して data.js を更新
+        if: steps.gate.outputs.run == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: >-
+            --max-turns 60
+            --allowedTools "Read,Edit,Write,Glob,Grep,WebSearch,WebFetch,Bash(node:*)"
+          prompt: |
+            このリポジトリは資格試験の日程サイトです。CLAUDE.md の「定期更新でやること」と「注意」に従って data.js を最新化してください。
+
+            - changed.md があれば、まずそこに書かれた資格（公式ページに新しい日程らしき記載が出たもの）を優先して確認する。
+              changed.md がなければ、data.js の全資格を確認する。
+            - 公式サイト（なければ大手資格学校のページ）を WebSearch / WebFetch で確認し、確認できた日付だけを反映する。推測で日付を入れない。
+            - 編集してよいのは data.js だけ。data_auto.js・HTML・CSS・JS・ワークフローは触らない。
+            - 編集後、node -e "global.window={};require('./data.js')" で構文エラーがないことを確認する。
+            - git の操作（commit / push / branch）はしない。コミットはこのワークフローが行う。
+            - 最後に、追加・変更した日程を「資格名：内容（出典URL）」の箇条書きで summary.md に書く。変更がなければ「変更なし」と書く。
+
+      - name: 変更をコミット
+        id: commit
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          node -e "global.window={};require('./data.js')"
+          if git diff --quiet -- data.js; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "data.js の変更なし"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data.js
+          git commit -m "日程を更新（Claude・$(TZ=Asia/Tokyo date +%Y-%m-%d)）" -m "$(cat summary.md 2>/dev/null | head -40)"
+          git pull --rebase origin main
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Issue に結果を書いて閉じる
+        if: steps.gate.outputs.run == 'true' && needs.watch.outputs.issue != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            if [ "${{ steps.commit.outputs.changed }}" = "true" ]; then
+              echo "data.js を更新しました（${{ steps.commit.outputs.sha }}）。"
+            else
+              echo "確認しましたが、data.js の変更はありませんでした。"
+            fi
+            echo
+            cat summary.md 2>/dev/null || true
+          } > comment.md
+          gh issue comment "${{ needs.watch.outputs.issue }}" --body-file comment.md
+          gh issue close "${{ needs.watch.outputs.issue }}" --reason completed
