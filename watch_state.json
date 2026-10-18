@@ -1,9 +1,9 @@
 {
- "updated": "2026-10-18",
+ "updated": "2026-10-19",
  "pages": {
   "https://www.ipa.go.jp/shiken/2026/ap_koudo_sc_kikan.html": {
    "names": "応用情報技術者試験（AP）・情報処理安全確保支援士試験（SC）・高度試験 前期（ST・SA・NW・SM）・高度試験 後期（PM・DB・ES・AU）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度 応用情報技術者試験、高度試験及び情報処理安全確保支援士試験の申込受付期間及び試験実施期間について | 試験情報 | IPA 独立行政法人 情報処理推進機構",
     "令和8年度試験情報",
@@ -51,7 +51,7 @@
   },
   "https://www.ipa.go.jp/shiken/kubun/fe.html": {
    "names": "基本情報技術者試験（FE）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度試験情報",
     "令和7年度試験情報",
@@ -83,13 +83,13 @@
   },
   "https://www3.jitec.ipa.go.jp/JitesCbt/": {
    "names": "ITパスポート試験",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.ipa.go.jp/shiken/kubun/sg.html": {
    "names": "情報セキュリティマネジメント試験（SG）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度試験情報",
     "令和7年度試験情報",
@@ -121,13 +121,13 @@
   },
   "https://aws.amazon.com/jp/certification/": {
    "names": "AWS認定",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://mos.odyssey-com.co.jp/": {
    "names": "MOS（Microsoft Office Specialist）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "MOS 全国一斉試験終了のお知らせ(2026年12月まで)",
     "2026/10/13 第363回 全国一斉試験 [2026/12/13(日)実施] 申込み受付開始しました"
@@ -136,19 +136,19 @@
   },
   "https://linuc.org/": {
    "names": "LinuC（Linux技術者認定）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.lpi.org/ja/": {
    "names": "LPIC（Linux Professional Institute）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.pythonic-exam.com/": {
    "names": "Python 3 エンジニア認定試験",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "Python実践試験が12月1日にマイナーチェンジ"
    ],
@@ -156,7 +156,7 @@
   },
   "https://learn.microsoft.com/ja-jp/credentials/": {
    "names": "Microsoft 認定（Azure など）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "ピアソンVUE、2025年IT認定受験者レポートの価値"
    ],
@@ -164,7 +164,7 @@
   },
   "https://cloud.google.com/learn/certification?hl=ja": {
    "names": "Google Cloud 認定",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "*Google/Ipsos、Cloud Learning Services マーケット動向調査、2024 年 9 月 17 日~10 月 23 日に実施(米国、英国、フランス、ドイツ、インド、ブラジル、メキシコ、日本、オーストラリア / ニュージーランド)"
    ],
@@ -172,13 +172,13 @@
   },
   "https://www.cisco.com/c/ja_jp/training-events/training-certifications/certifications/associate/ccna.html": {
    "names": "CCNA（シスコ技術者認定）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.kentei.ne.jp/bookkeeping": {
    "names": "日商簿記検定 1級・日商簿記検定 2級・3級",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "2027年度適用の商工会議所簿記検定試験出題区分表等(確定版)について",
     "【重要】2027年度以降の日商簿記3級試験問題の配点について",
@@ -192,7 +192,7 @@
   },
   "https://www.kinzai.or.jp/fp": {
    "names": "FP技能検定 1級",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "試験問題:2026年9月・10月1級実技試験",
     "2027年度試験日程・科目・受検手数料",
@@ -204,7 +204,7 @@
   },
   "https://www.jafp.or.jp/exam/": {
    "names": "FP技能検定 2級・3級",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "2025年9月14日(日)実施合否照会(1級)",
     "1級2025年9月14日(日)実施",
@@ -214,7 +214,7 @@
   },
   "https://www.retio.or.jp/exam/": {
    "names": "宅地建物取引士（宅建）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度宅建試験の受験票は、10月2日(金)に普通郵便で発送しました。10月6日(火)又は10月7日(水)頃に到着する見込みです。",
     "試験実施概況(令和7年度以前の過去10年間)はこちら",
@@ -227,7 +227,7 @@
   },
   "https://www.eiken.or.jp/eiken/schedule/": {
    "names": "実用英語技能検定（英検）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "2026年度第2回検定のお申し込み"
    ],
@@ -235,7 +235,7 @@
   },
   "https://www.shiken.or.jp/": {
    "names": "第三種電気主任技術者（電験三種）・第二種電気主任技術者（電験二種）・第一種電気主任技術者（電験一種）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "X(旧Twitter)における第二種電気工事士技能試験に関する投稿について(2026.10.08告訴状を提出)",
     "電験三種(令和8年度上期)の試験結果発表の日程変更について(お知らせ)",
@@ -245,7 +245,7 @@
   },
   "https://www.fcip-shiken.jp/": {
    "names": "建築施工管理技士・電気工事施工管理技士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度 1級 建築施工管理技術検定 第一次検定 合格発表はこちら",
     "令和8年度 1級 電気工事施工管理技術検定 第一次検定 合格発表はこちら",
@@ -255,13 +255,13 @@
   },
   "https://www.jctc.jp/": {
    "names": "土木施工管理技士・管工事施工管理技士・造園施工管理技士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.shiken.or.jp/construction/second/": {
    "names": "第二種電気工事士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度電気工事士試験の実施日程等のご案内",
     "令和8年度第二種電気工事士下期試験受験案内",
@@ -274,7 +274,7 @@
   },
   "https://www.shiken.or.jp/construction/first/": {
    "names": "第一種電気工事士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度電気工事士試験の実施日程等のご案内",
     "令和8年度第一種電気工事士下期試験受験案内",
@@ -288,7 +288,7 @@
   },
   "https://www.exam.or.jp/": {
    "names": "衛生管理者（第一種・第二種）・ボイラー技士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度熊本地震被災地域の受験者への学科試験又は実技試験の免除が受けられる期間の延長の取扱いについて",
     "令和8年度第2回作業環境測定士試験の日程が決まりました。",
@@ -304,7 +304,7 @@
   },
   "https://www.eccj.or.jp/mgr1/": {
    "names": "エネルギー管理士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度 実施予定 (PDF)",
     "令和8年度(第48回)エネルギー管理士試験 標準解答 NEW",
@@ -317,13 +317,13 @@
   },
   "https://www.khk.or.jp/qualification/national_qualification/": {
    "names": "冷凍機械責任者（第三種・第二種・第一種）・高圧ガス製造保安責任者（化学・機械）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.kyuukou.or.jp/": {
    "names": "給水装置工事主任技術者",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度給水装置工事主任技術者試験の受験票を発送しました。",
     "令和8年度給水装置工事主任技術者試験受験者用「住所等変更(訂正)届」について",
@@ -350,7 +350,7 @@
   },
   "https://www.jahmec.or.jp/": {
    "names": "建築物環境衛生管理技術者（ビル管）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "第56回(令和8年度)建築物環境衛生管理技術者試験の受験票発送のお知らせ",
     "令和8年熊本地震による事業登録における期間満了日の延長措置について"
@@ -359,7 +359,7 @@
   },
   "https://www.jaeic.or.jp/": {
    "names": "一級建築士・二級建築士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度構造設計一級建築士定期講習 修了判定結果を発表しました(令和8年8月実施分)",
     "令和8年度設備設計一級建築士定期講習 修了判定結果を発表しました(令和8年8月実施分)",
@@ -369,13 +369,13 @@
   },
   "https://www.fesc.or.jp/": {
    "names": "消防設備点検資格者",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.engineer.or.jp/c_topics/011/011780.html": {
    "names": "技術士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度技術士第一次試験 実施案内|公益社団法人 日本技術士会",
     "ホーム 試験・登録情報 第一次試験 令和8年度技術士第一次試験 実施案内",
@@ -397,7 +397,7 @@
   },
   "https://gyosei-shiken.or.jp/": {
    "names": "行政書士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和7年度試験結果",
     "令和8年度行政書士試験について",
@@ -416,7 +416,7 @@
   },
   "https://www.sharosi-siken.or.jp/": {
    "names": "社会保険労務士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "熊本県試験地にて実施した第58回(令和8年度)社会保険労務士試験に係る受験手数料の返還について",
     "令和8年熊本地震発生に伴う熊本県における社会保険労務士試験について"
@@ -425,7 +425,7 @@
   },
   "https://www.chintaikanrishi.jp/": {
    "names": "賃貸不動産経営管理士",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度 試験実施要領",
     "令和8年度 受験申込案内",
@@ -438,7 +438,7 @@
   },
   "https://www.kanrikyo.or.jp/": {
    "names": "管理業務主任者",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "令和8年度管理業務主任者試験 受験申込は終了しました。更新日2026.10.1",
     "記述式問題の試験範囲、申込案内書 を公表しました。 更新日2026.6.4"
@@ -447,7 +447,7 @@
   },
   "https://kentei.tokyo-cci.or.jp/houmu/": {
    "names": "ビジネス実務法務検定",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "【東商検定IBT・CBT】申込みの受付を終了しました(第60回ビジネス実務法務検定試験(2・3級)・第24回ビジネスマネジャー検定試験・第61回カラーコーディネーター検定試験)≪試験期間:2026年10月22日(木)~11月9日(月)≫",
     "【東商検定IBT・CBT】受験予定の方はお早めにお申込みください(第60回ビジネス実務法務検定試験(2・3級)・第24回ビジネスマネジャー検定試験・第61回カラーコーディネーター検定試験)≪試験期間:2026年10月22日(木)~11月9日(月)≫",
@@ -457,7 +457,7 @@
   },
   "https://www.jdla.org/certificate/general/": {
    "names": "G検定（ジェネラリスト検定）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "・2026年は オンライン試験(年6回) と 会場試験(年3回) を実施いたします。",
     "(例.2027年1月15日(金)受験の場合、2027年1月12日(火)23:59まで)",
@@ -486,7 +486,7 @@
   },
   "https://www.jdla.org/certificate/engineer/": {
    "names": "E資格（エンジニア資格）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "「2026年 第2回 E資格(エンジニア資格)」結果発表・2027年開催スケジュールのお知らせ",
     "「2026年 第2回 E資格(エンジニア資格)」受験申込開始のお知らせ",
@@ -496,7 +496,7 @@
   },
   "https://www.datascientist.or.jp/dskentei/": {
    "names": "データサイエンティスト検定（DS検定）",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "個人申込:2026年9月21日(月)10:00~2026年10月23日(金)",
     "団体申込:2026年9月21日(月)10:00~2026年10月16日(金)",
@@ -509,13 +509,13 @@
   },
   "https://guga.or.jp/": {
    "names": "生成AIパスポート",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [],
    "changed": null
   },
   "https://www.toukei-kentei.jp/": {
    "names": "統計検定",
-   "checked": "2026-10-18",
+   "checked": "2026-10-19",
    "lines": [
     "2026年度のお申込は終了しました",
     "統計検定1級申込サイト メンテナンス情報(9月29日実施)",
