@@ -1,0 +1,129 @@
+name: AIコーチ
+
+# リポジトリのオーナーが Issue（本文またはコメント）に次のコマンドを書くと、Claude が返答する。
+#   /plan  … 学習計画を作る（例：/plan 電験三種 平日1時間・休日3時間）
+#   /replan … これまでのやり取りと進み具合をふまえて計画を組み直す
+#   /ask   … 資格や勉強法の質問に答える
+#   /quiz  … 一問一答の問題を追加して quiz.js にコミットする（例：/quiz denken3 10）
+# Secrets に ANTHROPIC_API_KEY が必要（API 利用料がかかる）。オーナー以外のコマンドには反応しない。
+
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: coach-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  coach:
+    if: >-
+      github.event.issue.pull_request == null &&
+      github.actor == github.repository_owner &&
+      (startsWith(github.event.comment.body || github.event.issue.body, '/plan') ||
+       startsWith(github.event.comment.body || github.event.issue.body, '/replan') ||
+       startsWith(github.event.comment.body || github.event.issue.body, '/ask') ||
+       startsWith(github.event.comment.body || github.event.issue.body, '/quiz'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ISSUE: ${{ github.event.issue.number }}
+      HAS_KEY: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+      STATE_GIST_ID: ${{ vars.STATE_GIST_ID || secrets.STATE_GIST_ID }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+
+      - name: API キーの確認
+        if: env.HAS_KEY != 'true'
+        run: |
+          gh issue comment "$ISSUE" --body "AIコーチを使うには、Settings → Secrets and variables → Actions → Secrets に \`ANTHROPIC_API_KEY\` を登録してください（API 利用料がかかります）。"
+          exit 1
+
+      - name: 依頼内容と、あなたの記録（☆・合格・問題の正答率）を用意
+        env:
+          BODY: ${{ github.event.comment.body || github.event.issue.body }}
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          mkdir -p coach
+          printf '%s\n' "$BODY" > coach/request.md
+          cmd=$(head -n1 coach/request.md | awk '{print $1}')
+          echo "CMD=$cmd" >> "$GITHUB_ENV"
+          # Issue のやり取り（/replan 用）
+          {
+            echo "# $TITLE"
+            gh api "repos/${{ github.repository }}/issues/$ISSUE" --jq '"## 最初の投稿\n" + (.body // "")'
+            gh api "repos/${{ github.repository }}/issues/$ISSUE/comments" --paginate --jq '.[] | "## \(.user.login)（\(.created_at[0:10])）\n\(.body)\n"'
+          } > coach/thread.md
+          # サイトの記録（同期用 Gist）。なければ空
+          if [ -n "$STATE_GIST_ID" ]; then
+            curl -fsS "https://api.github.com/gists/$STATE_GIST_ID" | jq -r '.files["state.json"].content // "{}"' > coach/state.json || echo '{}' > coach/state.json
+          else
+            echo '{}' > coach/state.json
+          fi
+          echo "今日は $(TZ=Asia/Tokyo date +%Y-%m-%d) です。" > coach/today.md
+          gh api -X POST "repos/${{ github.repository }}/issues/$ISSUE/reactions" -f content=eyes > /dev/null || true
+
+      - name: Claude が返答を作る
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: >-
+            --max-turns 40
+            --allowedTools "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch,Bash(node:*)"
+          prompt: |
+            あなたは資格試験の学習コーチです。リポジトリは資格試験の日程サイトで、次のファイルがあります。
+            - data.js（資格ごとの日程・受験料・合格率と勉強時間の目安 guide・区分 parts）、data_auto.js（危険物・消防設備士・TOEIC の日程）、routes.js（資格のつながり）、quiz.js（一問一答）
+            - coach/request.md：今回の依頼（1行目がコマンド）
+            - coach/thread.md：この Issue のやり取り全体
+            - coach/state.json：利用者の記録（stars=受験予定の回、passedParts/passed=合格済み、progress=申込などのチェック、quiz=問題ごとの正誤 {c:正解数, w:不正解数, streak}、scores=TOEIC のスコア、planner=サイトで選んだ目標）
+            - coach/today.md：今日の日付
+            利用者は愛知県（名古屋）在住です。日本語で、やさしく具体的に答えてください。
+
+            コマンドごとにやること：
+            - /plan：試験日から逆算した週ごとの学習計画を作る。data.js の日程と guide を使い、使える時間（書かれていなければ平日1時間・休日3時間と仮定し、そう明記）に合わせる。
+              申込期間・試験日・合格発表を最初にまとめ、続けて「今週〜試験まで」の週ごとの表（期間・やること・目標時間）、教材の選び方、つまずいたときの見直しポイントを書く。
+              state.json の quiz で間違いが多い分野があれば、そこを重点にする。
+            - /replan：thread.md の前の計画と、request.md に書かれた進み具合（なければ state.json の progress・quiz）をもとに、残り期間で計画を組み直す。何を削ったか・増やしたかも書く。
+            - /ask：質問に答える。日程や制度など変わりうることは公式サイトを WebSearch / WebFetch で確認し、出典URLを付ける。
+            - /quiz：「/quiz 資格ID 件数」（資格ID は data.js の id。名前で書かれていたら対応する id を探す）。
+              quiz.js の window.QUIZ[資格ID] に、既存と重複しないオリジナルの4択問題を指定件数（最大20、省略時10）追加する。
+              形式は既存と同じ { id, part?, q, c:[4つ], a:正解の番号(0始まり), e:解説 }。id は既存と重ならない連番。part は data.js の parts の id に合わせる。
+              事実関係は公式・信頼できる資料で確認し、不確かな問題は作らない。正解の位置は偏らないようにする。
+              編集後に node -e "global.window={};require('./quiz.js')" で構文を確認する。
+
+            最後に必ず、Issue に投稿する返答を coach/reply.md に Markdown で書く（/quiz のときは追加した問題の一覧を短く）。
+            quiz.js 以外のファイル（data.js など）は編集しない。git の操作はしない（コミットはワークフローが行う）。
+
+      - name: 問題を追加したらコミット
+        if: env.CMD == '/quiz'
+        run: |
+          node -e "global.window={};require('./quiz.js')"
+          if git diff --quiet -- quiz.js; then echo "quiz.js の変更なし"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add quiz.js
+          git commit -m "一問一答を追加（AIコーチ・Issue #$ISSUE）"
+          git pull --rebase origin main
+          git push
+
+      - name: 返答を投稿
+        if: always() && env.HAS_KEY == 'true'
+        run: |
+          if [ -s coach/reply.md ]; then
+            gh issue comment "$ISSUE" --body-file coach/reply.md
+          else
+            gh issue comment "$ISSUE" --body "返答を作れませんでした。Actions のログを確認してください：${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi

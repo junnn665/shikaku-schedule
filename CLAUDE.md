@@ -10,6 +10,9 @@
 - `watch_state.json`：`.github/workflows/update.yml` の監視記録（自動生成。手で編集しない）。
   GitHub Actions 上で Claude が動くときは、変化のあったページが `changed.md` に書かれている。
 
+- `quiz.js`：一問一答（オリジナル問題）。AIコーチ（`.github/workflows/coach.yml` の `/quiz`）で追加される。
+  問題は事実を確認したうえで作り、正解の位置を偏らせない。
+
 ## 定期更新でやること
 
 1. `data.js` の各資格について、公式サイト（なければ大手資格学校のページ）で次を確認する。

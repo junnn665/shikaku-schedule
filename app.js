@@ -21,7 +21,7 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, progress: {}, licenses: {}, scores: {}, targets: {}, updatedAt: 0 };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, progress: {}, licenses: {}, scores: {}, targets: {}, quiz: {}, planner: {}, updatedAt: 0 };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
@@ -424,8 +424,10 @@
     const upcoming = starredSessions.filter((s) => statusOf(s).code !== "past").sort((a, b) => nextDate(a).localeCompare(nextDate(b)));
     const past = starredSessions.filter((s) => statusOf(s).code === "past");
 
+    const coachBody = `/plan ☆を付けた試験の学習計画\n\n▼受験予定\n${upcoming.map((s) => `- ${s.exam_.name}（${s.label}・試験 ${s.exam[0]}）`).join("\n")}\n\n▼使える時間\n平日 1時間、休日 3時間（ここを書き換えてください）`;
     let h = `<div class="plan-actions">
       <button class="btn" id="icsBtn" ${upcoming.length ? "" : "disabled"}>カレンダー用に書き出す（.ics）</button>
+      <a class="btn ghost" target="_blank" rel="noopener" href="${esc(coachUrl("学習計画の相談", coachBody))}">AIコーチに相談 ↗</a>
     </div>`;
     h += feeSummary(upcoming);
     h += `<h2 class="section-title">これからの予定</h2>`;
@@ -713,7 +715,7 @@
   const SYNC_KEY = "shikaku-schedule:sync";
   const GIST_DESC = "shikaku-schedule state";
   const GIST_FILE = "state.json";
-  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "progress", "licenses", "scores", "targets", "pref", "updatedAt"];
+  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "progress", "licenses", "scores", "targets", "quiz", "planner", "pref", "updatedAt"];
   let sync = {};
   try { sync = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}"); } catch (e) { /* 無視 */ }
   const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) { /* 無視 */ } };
@@ -847,6 +849,179 @@
     const starred = ALL_SESSIONS.some((s) => s.exam_ === ex && isStar(s.key) && !sessionDone(s) && statusOf(s).code !== "past" && (!pid || sessionParts(s).includes(pid))) || isStar(`${ex.id}#any`);
     return { ex, label, passed, starred };
   }
+
+  // ---------- AIコーチ（GitHub Issue）へのリンク ----------
+  const REPO = (() => {
+    const m = location.hostname.match(/^([^.]+)\.github\.io$/);
+    const seg = location.pathname.split("/").filter(Boolean)[0];
+    return m && seg ? `${m[1]}/${seg}` : "junnn665/shikaku-schedule";
+  })();
+  const coachUrl = (title, body) => `https://github.com/${REPO}/issues/new?title=${encodeURIComponent(title)}&body=${encodeURIComponent(body)}`;
+
+  // ---------- 最短ルートの自動提案 ----------
+  // 勉強時間の目安（例「200〜500時間」「2級 250〜350時間／3級 50〜100時間」）から時間数を取り出す
+  function studyHours(ex, pid) {
+    const raw = (ex.guide && ex.guide.hours) || "";
+    const segs = raw.split(/[／/]/);
+    const seg = (pid && segs.find((x) => x.includes(pid))) || segs[0] || "";
+    const nums = (seg.replace(/,/g, "").match(/\d+(\.\d+)?/g) || []).map(Number).filter((n) => n >= 5);
+    if (!nums.length) return 100;
+    return nums.length >= 2 ? Math.round((nums[0] + nums[1]) / 2) : nums[0];
+  }
+  const refOf = (id, pid) => (pid ? `${id}:${pid}` : id);
+  const splitRef = (ref) => { const [id, pid] = ref.split(":"); return { id, pid, ex: EXAMS.find((e) => e.id === id) }; };
+  const refPassed = (ref) => { const { ex, pid } = splitRef(ref); return pid ? !!passedPartsOf(ex)[pid] : isPassed(ex); };
+  const refLabel = (ref) => nodeInfo(ref).label;
+
+  // routes.js の矢印を逆にたどって、目標の前に受けるとよい資格を集める
+  function predecessors(target) {
+    const edges = (window.ROUTES || []).flatMap((r) => r.edges);
+    const { id: tid, pid: tpid } = splitRef(target);
+    const incoming = (ref) => {
+      const { id, pid } = splitRef(ref);
+      return edges.filter(([, b]) => { const B = splitRef(b); return b === ref || (B.id === id && (!B.pid || !pid)); });
+    };
+    const order = [], seen = new Set([target]), notes = {};
+    const visit = (ref, depth) => {
+      if (depth > 4) return;
+      for (const [a, , note] of incoming(ref)) {
+        if (seen.has(a)) continue;
+        seen.add(a);
+        notes[a] = note;
+        if (!refPassed(a)) visit(a, depth + 1);
+        order.push(a);
+      }
+    };
+    visit(target, 0);
+    const list = order.filter((r) => r !== target && !refPassed(r) && !(splitRef(r).id === tid && !splitRef(r).pid && !tpid));
+    return { list, notes };
+  }
+
+  // ref を実際に受ける単位（区分）に分ける
+  function expandSteps(ref) {
+    const { ex, pid } = splitRef(ref);
+    if (pid) return refPassed(ref) ? [] : [{ ex, pid }];
+    if (ex.partsSeq && ex.parts) return ex.parts.filter(([p]) => !passedPartsOf(ex)[p]).map(([p]) => ({ ex, pid: p }));
+    return isPassed(ex) ? [] : [{ ex, pid: null }];
+  }
+
+  function buildPlan(target, includeRefs, weekly, deadline) {
+    const refs = [...includeRefs, target];
+    const steps = [];
+    let cursor = TODAY;
+    const seenSteps = new Set();
+    for (const ref of refs) {
+      const parts = expandSteps(ref);
+      parts.forEach((st, idx) => {
+        const key = refOf(st.ex.id, st.pid);
+        if (seenSteps.has(key)) return;
+        seenSteps.add(key);
+        const seq = st.ex.partsSeq && idx > 0;
+        let hours = studyHours(st.ex, st.pid);
+        if (st.ex.partsSeq && st.pid && st.ex.parts && st.ex.parts[0][0] !== st.pid) hours = Math.max(20, Math.round(hours * 0.3));
+        const days = Math.ceil((hours / Math.max(1, weekly)) * 7);
+        const ready = addDays(cursor, days);
+        const cands = SESSIONS.filter((s) => s.exam_ === st.ex && (!st.pid || sessionParts(s).includes(st.pid)) && (!s.apply || s.apply[1] >= TODAY) && s.exam[0] >= (seq ? cursor : ready))
+          .sort((a, b) => a.exam[0].localeCompare(b.exam[0]));
+        let s = cands[0];
+        let est = false;
+        if (!s) {
+          // 収録済みの回（終わった回も含む）の日付を1年ずつずらして、例年どおりの時期を見込む
+          const base = ALL_SESSIONS.filter((x) => x.exam_ === st.ex && (!x.pref || x.pref === store.pref) && (!st.pid || sessionParts(x).includes(st.pid)));
+          const need = seq ? cursor : ready;
+          let best = null;
+          for (const b of base) {
+            for (let y = 1; y <= 6; y++) {
+              const ex0 = addYMD(b.exam[0], y);
+              if (ex0 < need) continue;
+              const ap = b.apply ? [addYMD(b.apply[0], y), addYMD(b.apply[1], y)] : null;
+              if (ap && ap[1] < TODAY) continue;
+              if (!best || ex0 < best.exam[0]) best = { ...b, label: `${ex0.slice(0, 4)}年の回（見込み）`, exam: [ex0, addYMD(b.exam[1], y)], apply: ap, announce: b.announce ? addYMD(b.announce, y) : null, key: null };
+              break;
+            }
+          }
+          if (best) { s = best; est = true; }
+        }
+        let step;
+        if (s) {
+          const studyStart = addDays(s.exam[0], -days) > cursor ? addDays(s.exam[0], -days) : cursor;
+          step = { ...st, hours, days, session: s, est, date: s.exam[0], studyStart, tight: diff(cursor, s.exam[0]) < days };
+          cursor = seq || (st.ex.partsSeq && st.ex.parts && st.ex.parts[0][0] === st.pid) ? s.exam[1] : (s.announce && s.announce > s.exam[1] ? s.announce : s.exam[1]);
+        } else if (st.ex.anytime || !st.ex.sessions.length) {
+          step = { ...st, hours, days, session: null, date: ready, studyStart: cursor, anytime: !!st.ex.anytime };
+          cursor = addDays(ready, st.ex.anytime ? 14 : 30);
+        } else {
+          step = { ...st, hours, days, session: null, date: ready, studyStart: cursor, unknown: true };
+          cursor = addDays(ready, 30);
+        }
+        steps.push(step);
+      });
+    }
+    const last = steps.length ? steps[steps.length - 1].date : TODAY;
+    const totalHours = steps.reduce((a, b) => a + b.hours, 0);
+    return { steps, last, totalHours, over: deadline && last > deadline };
+  }
+
+  function targetOptions() {
+    const groups = Object.entries(CATS).map(([k, c]) => {
+      const opts = EXAMS.filter((e) => e.cat === k && !e.score).flatMap((e) => {
+        const o = [];
+        if (!e.parts || e.partsSeq || !e.sessions.some((s) => s.parts)) o.push([e.id, e.name]);
+        if (e.parts && !(e.credits && !e.partsSeq && e.credits.some((r) => r.years === 3)))
+          e.parts.forEach(([p, l]) => o.push([`${e.id}:${p}`, `${e.name.replace(/（.*?）/g, "")} ／ ${l}`]));
+        return o;
+      });
+      return `<optgroup label="${esc(c.label)}">${opts.map(([v, l]) => `<option value="${esc(v)}" ${store.planner.target === v ? "selected" : ""}>${esc(l)}${refPassed(v) ? "（合格済み）" : ""}</option>`).join("")}</optgroup>`;
+    });
+    return groups.join("");
+  }
+
+  function plannerHtml() {
+    const pl = store.planner;
+    let h = `<h2 class="section-title">最短ルートの自動提案</h2>
+      <div class="card planner">
+        <div class="pl-form">
+          <label class="pl-wide">目標の資格<select id="plTarget"><option value="">選んでください</option>${targetOptions()}</select></label>
+          <label>期限<select id="plYears">${[["", "指定なし"], ["1", "1年以内"], ["2", "2年以内"], ["3", "3年以内"], ["5", "5年以内"]].map(([v, l]) => `<option value="${v}" ${String(pl.years || "") === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+          <label>週の勉強時間<span class="pl-num"><input id="plWeekly" type="number" min="1" max="60" value="${pl.weekly || 7}" inputmode="numeric">時間</span></label>
+        </div>`;
+    if (!pl.target) return h + `<p class="hint">目標を選ぶと、資格のつながり・実際の試験日程・勉強時間の目安・合格済みの区分から、受ける順番と時期を組み立てます。</p></div>`;
+    const { list, notes } = predecessors(pl.target);
+    const skip = new Set(pl.skip || []);
+    const include = list.filter((r) => !skip.has(r));
+    const deadline = pl.years ? addYMD(TODAY, Number(pl.years)) : "";
+    const plan = buildPlan(pl.target, include, Number(pl.weekly) || 7, deadline);
+    if (list.length) {
+      h += `<div class="pl-pre"><small>先に受けるとよい資格（外したいものはチェックを外す）</small>
+        ${list.map((r) => `<label class="pl-chip"><input type="checkbox" data-plskip="${esc(r)}" ${skip.has(r) ? "" : "checked"}>${esc(refLabel(r))}</label>`).join("")}</div>`;
+    }
+    if (refPassed(pl.target)) return h + `<div class="empty">この資格は合格済みです 🎉</div></div>`;
+    h += `<ol class="pl-steps">${plan.steps.map((st, i) => {
+      const s = st.session, ref = refOf(st.ex.id, st.pid);
+      const name = `${st.ex.name.replace(/（.*?）/g, "")}${st.pid ? ` ${partName(st.ex, st.pid)}` : ""}`;
+      const when = s ? `試験 ${st.est ? "例年どおりなら " : ""}${fmtRange(s.exam)}` : st.anytime ? `${fmt(st.date, true)} ごろ受験（随時受験）` : `${Number(st.date.slice(0, 4))}年${Number(st.date.slice(5, 7))}月以降の回（日程は公式で確認）`;
+      const apply = s ? (s.apply ? `申込 ${st.est ? "見込み " : ""}${fmtRange(s.apply)}` : "申込期間は公式で確認") : "";
+      return `<li class="${st.unknown ? "unknown" : ""} ${st.est ? "est" : ""} ${st.tight ? "tight" : ""}" style="--c:${CATS[st.ex.cat].color}">
+        <div class="pl-head"><b>${esc(name)}</b><span>${esc(s ? s.label : "")}</span></div>
+        <div class="pl-when">${esc(when)}${apply ? `<br>${esc(apply)}` : ""}</div>
+        <div class="pl-study">勉強：${fmt(st.studyStart, true)} から（目安 ${st.hours}時間・約${Math.ceil(st.days / 7)}週）${st.tight ? " ⚠ 時間が足りない可能性" : ""}</div>
+        ${notes[ref] ? `<div class="edge-note">${esc(notes[ref])}</div>` : ""}
+      </li>`;
+    }).join("")}</ol>`;
+    h += `<div class="pl-sum">${plan.steps.length ? `完了の目安：<b>${fmt(plan.last, true)}</b>（合計 約${plan.totalHours}時間）` : "受ける区分がありません"}
+      ${plan.over ? `<div class="warn-box">⚠ 期限（${fmt(deadline, true)}）に間に合わない見込みです。週の勉強時間を増やすか、先に受ける資格を減らしてください。</div>` : ""}</div>`;
+    const starable = plan.steps.filter((st) => st.session && st.session.key && !isStar(st.session.key));
+    const planText = plan.steps.map((st, i) => `${i + 1}. ${st.ex.name}${st.pid ? ` ${partName(st.ex, st.pid)}` : ""}：${st.session ? `${st.session.label}（試験 ${st.session.exam[0]}${st.est ? "・見込み" : ""}）` : st.anytime ? `随時（${st.date}ごろ）` : "日程未発表"}・目安${st.hours}時間`).join("\n");
+    h += `<div class="plan-actions">
+        <button class="btn" id="plStar" ${starable.length ? "" : "disabled"}>このプランの回を☆に追加${starable.length ? `（${starable.length}件）` : ""}</button>
+        <a class="btn ghost" target="_blank" rel="noopener" href="${esc(coachUrl(`学習計画：${refLabel(pl.target)}`, `/plan ${refLabel(pl.target)} 平日・休日あわせて週${pl.weekly || 7}時間${pl.years ? `、${pl.years}年以内` : ""}\n\n▼サイトで作ったルート\n${planText}\n\n（ここに得意・苦手や使える時間帯などを書くと計画に反映します）`))}">AIコーチに学習計画を作ってもらう ↗</a>
+      </div>
+      <p class="hint">日程は収録済みの回から選び、まだ発表されていない回は前年の日程から「見込み」で出しています（☆に追加できるのは発表済みの回だけ）。勉強時間は一般的な目安です。</p>
+      <input type="hidden" id="plStarKeys" value="${esc(starable.map((st) => st.session.key).join("|"))}">
+    </div>`;
+    return h;
+  }
+
   function renderRoute() {
     // 年間ロードマップ
     const start = `${TODAY.slice(0, 7)}-01`;
@@ -866,7 +1041,7 @@
     }
     const months = [];
     for (let i = 0; i < 12; i++) months.push(addYMD(start, 0, i));
-    let h = `<h2 class="section-title">年間ロードマップ（☆を付けた回）</h2>`;
+    let h = plannerHtml() + `<h2 class="section-title">年間ロードマップ（☆を付けた回）</h2>`;
     if (!rows.length) h += `<div class="empty">☆を付けた試験がここに1年分並びます</div>`;
     else {
       h += `<div class="card roadmap"><div class="rm-scroll"><div class="rm-inner">
@@ -894,10 +1069,80 @@
     document.getElementById("view-route").innerHTML = h;
   }
 
-  const VIEWS = ["deadline", "list", "calendar", "route", "plan", "have"];
+
+  // ---------- 一問一答 ----------
+  const QUIZ = window.QUIZ || {};
+  const quizExams = () => EXAMS.filter((e) => (QUIZ[e.id] || []).length);
+  const qStat = (id) => store.quiz[id] || {};
+  let quizSel = null, quizMode = "rec", quizCur = null, quizAnswered = null, quizOrder = [], quizRecent = [];
+  function quizPool(exId) {
+    const qs = QUIZ[exId] || [];
+    const st = (q) => qStat(q.id);
+    if (quizMode === "wrong") return qs.filter((q) => (st(q).w || 0) > 0 && !(st(q).streak >= 2));
+    if (quizMode === "new") return qs.filter((q) => !st(q).last);
+    if (quizMode === "all") return qs.slice();
+    // おすすめ：まだ正解し直していない間違い → 未回答 → 前に解いた日が古い順
+    const score = (q) => { const x = st(q); if ((x.w || 0) > 0 && !(x.streak >= 1)) return 0; if (!x.last) return 1; return 2 + (x.streak || 0) * 0.1 - diff(x.last, TODAY) / 1000; };
+    return qs.slice().sort((a, b) => score(a) - score(b) || (qStat(a.id).last || "").localeCompare(qStat(b.id).last || ""));
+  }
+  function nextQuestion() {
+    const pool = quizPool(quizSel);
+    if (!pool.length) { quizCur = null; return; }
+    // 間違えた問題も、間に何問かはさんでから出し直す
+    const gap = Math.min(4, Math.max(0, pool.length - 1));
+    const recent = quizRecent.slice(-gap);
+    const fresh = pool.filter((q) => !recent.includes(q.id));
+    const pick = quizMode === "all" ? (fresh.length ? fresh : pool)[Math.floor(Math.random() * (fresh.length || pool.length))] : fresh[0] || pool[0];
+    quizCur = pick; quizAnswered = null;
+    quizRecent.push(pick.id); if (quizRecent.length > 10) quizRecent.shift();
+    quizOrder = pick.c.map((_, i) => i).sort(() => Math.random() - 0.5);
+  }
+  function examAcc(exId) {
+    const qs = QUIZ[exId] || [];
+    let c = 0, w = 0, done = 0, mastered = 0;
+    qs.forEach((q) => { const x = qStat(q.id); c += x.c || 0; w += x.w || 0; if (x.last) done++; if ((x.streak || 0) >= 2) mastered++; });
+    return { n: qs.length, done, mastered, rate: c + w ? Math.round((c / (c + w)) * 100) : null };
+  }
+  function renderQuiz() {
+    const exs = quizExams();
+    if (!quizSel || !QUIZ[quizSel]) {
+      const starredFirst = exs.find((e) => ALL_SESSIONS.some((s) => s.exam_ === e && isStar(s.key))) || exs[0];
+      quizSel = store.quizLast && QUIZ[store.quizLast] ? store.quizLast : starredFirst && starredFirst.id;
+    }
+    if (!quizCur || !(QUIZ[quizSel] || []).includes(quizCur)) nextQuestion();
+    const ex = EXAMS.find((e) => e.id === quizSel);
+    const acc = examAcc(quizSel);
+    let h = `<div class="quiz-top">
+      <select id="quizExam">${exs.map((e) => { const a = examAcc(e.id); return `<option value="${e.id}" ${e.id === quizSel ? "selected" : ""}>${esc(e.name)}（${a.n}問${a.rate != null ? `・正答率${a.rate}%` : ""}）</option>`; }).join("")}</select>
+      <div class="quiz-modes">${[["rec", "おすすめ"], ["wrong", "間違えた問題"], ["new", "未回答"], ["all", "ランダム"]].map(([k, l]) => `<button class="chip ${quizMode === k ? "is-on" : ""}" data-qmode="${k}">${l}</button>`).join("")}</div>
+      <div class="quiz-acc"><span>解いた ${acc.done}/${acc.n}</span><span>覚えた ${acc.mastered}</span><span>正答率 ${acc.rate != null ? acc.rate + "%" : "—"}</span>
+        <div class="bar"><i style="width:${acc.n ? (acc.mastered / acc.n) * 100 : 0}%"></i><i class="b2" style="width:${acc.n ? ((acc.done - acc.mastered) / acc.n) * 100 : 0}%"></i></div></div>
+    </div>`;
+    if (!quizCur) {
+      h += `<div class="empty">${quizMode === "wrong" ? "間違えた問題はありません 👏" : quizMode === "new" ? "未回答の問題はありません" : "問題がありません"}</div>`;
+    } else {
+      const q = quizCur, ans = quizAnswered;
+      h += `<article class="card quiz-card" style="--cat:${CATS[ex.cat].color}">
+        <div class="sub">${esc(ex.name)}${q.part ? ` ・ ${esc(partName(ex, q.part))}` : ""}${qStat(q.id).w ? ` ・ 前に${qStat(q.id).w}回間違えた問題` : ""}</div>
+        <h3 class="quiz-q">${esc(q.q)}</h3>
+        <div class="quiz-choices">${quizOrder.map((i, k) => {
+          let cls = "";
+          if (ans !== null) cls = i === q.a ? "right" : i === ans ? "wrong" : "dim";
+          return `<button class="qc ${cls}" data-qans="${i}" ${ans !== null ? "disabled" : ""}><span>${"ABCD"[k]}</span>${esc(q.c[i])}</button>`;
+        }).join("")}</div>
+        ${ans !== null ? `<div class="quiz-exp ${ans === q.a ? "ok" : "ng"}"><b>${ans === q.a ? "正解！" : "不正解"}</b> ${esc(q.e)}</div>
+          <div class="plan-actions"><button class="btn" id="quizNext">次の問題へ</button></div>` : ""}
+      </article>`;
+    }
+    h += `<div class="quiz-foot"><a class="btn ghost small" target="_blank" rel="noopener" href="${esc(coachUrl(`問題を追加：${ex ? ex.name : ""}`, `/quiz ${quizSel} 10\n\n（出してほしい分野や苦手なところがあれば書いてください）`))}">AIで問題を増やす ↗</a>
+      <span class="hint">問題はオリジナルです。法令や数値は改正されることがあるので、公式テキストでも確認してください。</span></div>`;
+    document.getElementById("view-quiz").innerHTML = h;
+  }
+
+  const VIEWS = ["deadline", "list", "calendar", "route", "plan", "quiz", "have"];
   // ---------- 全体 ----------
   function renderAll() {
-    renderFilters(); renderDeadline(); renderList(); renderCalendar(); renderPlan(); renderRoute(); renderHave();
+    renderFilters(); renderDeadline(); renderList(); renderCalendar(); renderPlan(); renderRoute(); renderQuiz(); renderHave();
   }
 
   function setView(v) {
@@ -934,6 +1179,21 @@
       return;
     }
     if (t.dataset.passparts) { openPassDialog(t.dataset.passparts); return; }
+    if (t.dataset.qans !== undefined) {
+      const i = Number(t.dataset.qans), q = quizCur;
+      const x = { ...qStat(q.id) };
+      if (i === q.a) { x.c = (x.c || 0) + 1; x.streak = (x.streak || 0) + 1; } else { x.w = (x.w || 0) + 1; x.streak = 0; }
+      x.last = TODAY;
+      store.quiz[q.id] = x; quizAnswered = i;
+      save(); renderQuiz(); return;
+    }
+    if (t.id === "quizNext") { nextQuestion(); renderQuiz(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+    if (t.dataset.qmode) { quizMode = t.dataset.qmode; quizCur = null; renderQuiz(); return; }
+    if (t.id === "plStar") {
+      const keys = document.getElementById("plStarKeys").value.split("|").filter(Boolean);
+      keys.forEach((k) => { store.stars[k] = true; });
+      save(); renderAll(); toast(`${keys.length}件を☆に追加しました`); return;
+    }
     if (t.dataset.score) { openScoreDialog(t.dataset.score); return; }
     if (t.id === "scoreAdd") { addScore(); return; }
     if (t.dataset.delscore) {
@@ -1017,6 +1277,15 @@
   document.addEventListener("change", (e) => {
     if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
     if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
+    if (e.target.id === "quizExam") { quizSel = e.target.value; store.quizLast = quizSel; quizCur = null; save(false); renderQuiz(); return; }
+    if (e.target.id === "plTarget") { store.planner = { ...store.planner, target: e.target.value, skip: [] }; save(); renderRoute(); return; }
+    if (e.target.id === "plYears") { store.planner = { ...store.planner, years: e.target.value }; save(); renderRoute(); return; }
+    if (e.target.id === "plWeekly") { store.planner = { ...store.planner, weekly: Math.max(1, Number(e.target.value) || 7) }; save(); renderRoute(); return; }
+    if (e.target.dataset && e.target.dataset.plskip) {
+      const r = e.target.dataset.plskip, skip = new Set(store.planner.skip || []);
+      if (e.target.checked) skip.delete(r); else skip.add(r);
+      store.planner = { ...store.planner, skip: [...skip] }; save(); renderRoute(); return;
+    }
     if (e.target.id === "haveYear") { haveYear = e.target.value; renderHave(); return; }
     if (e.target.id === "scTarget") {
       const v = Number(e.target.value);

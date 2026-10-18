@@ -404,3 +404,56 @@ code { font-size: 12px; background: var(--surface-2); border: 1px solid var(--li
 .year-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
 .year-list li .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .year-list li small { margin-left: auto; color: var(--ink-3); font-size: 12px; }
+
+/* planner */
+.planner { border-left-color: var(--accent); }
+.pl-form { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.pl-form label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--ink-2); }
+.pl-form .pl-wide { grid-column: 1 / -1; }
+.pl-form select, .pl-form input { font: inherit; font-size: 14px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink); min-width: 0; }
+.pl-num { display: flex; align-items: center; gap: 6px; }
+.pl-num input { width: 80px; }
+.pl-pre { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pl-pre small { flex-basis: 100%; color: var(--ink-3); }
+.pl-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 13px; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; background: var(--surface-2); cursor: pointer; }
+.pl-chip input { accent-color: var(--accent); }
+.pl-steps { list-style: none; counter-reset: st; padding: 0; margin: 14px 0 0; }
+.pl-steps li { counter-increment: st; position: relative; padding: 0 0 14px 34px; border-left: 2px solid var(--line); margin-left: 11px; }
+.pl-steps li:last-child { border-left-color: transparent; }
+.pl-steps li::before { content: counter(st); position: absolute; left: -12px; top: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--c); color: #fff; font-size: 12px; font-weight: 700; display: grid; place-items: center; }
+.pl-steps li.unknown::before { background: var(--ink-3); }
+.pl-head b { font-size: 15px; }
+.pl-head span { color: var(--ink-3); font-size: 12px; margin-left: 6px; }
+.pl-when { font-size: 13px; margin-top: 2px; }
+.pl-study { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.pl-steps li.tight .pl-study { color: var(--urgent); }
+.pl-sum { font-size: 14px; margin: 4px 0 8px; }
+.pl-sum b { font-family: "Zen Kaku Gothic New", sans-serif; font-size: 18px; }
+a.btn { text-decoration: none; display: inline-block; }
+
+/* quiz */
+.quiz-top { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.quiz-top select { font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); }
+.quiz-modes { display: flex; flex-wrap: wrap; gap: 6px; }
+.quiz-acc { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); }
+.quiz-acc .bar { flex-basis: 100%; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; display: flex; }
+.quiz-acc .bar i { background: var(--open); }
+.quiz-acc .bar i.b2 { background: color-mix(in srgb, var(--open) 35%, transparent); }
+.quiz-q { font-size: 17px; line-height: 1.6; margin: 6px 0 12px; }
+.quiz-choices { display: flex; flex-direction: column; gap: 8px; }
+.qc { display: flex; gap: 10px; align-items: center; text-align: left; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); cursor: pointer; font-size: 15px; }
+.qc span { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 700; border: 1.5px solid var(--ink-3); color: var(--ink-2); }
+.qc.right { border-color: var(--open); background: var(--open-bg); }
+.qc.right span { background: var(--open); border-color: var(--open); color: #fff; }
+.qc.wrong { border-color: var(--urgent); background: var(--urgent-bg); }
+.qc.wrong span { background: var(--urgent); border-color: var(--urgent); color: #fff; }
+.qc.dim { opacity: .55; }
+.qc:disabled { cursor: default; color: var(--ink); }
+.quiz-exp { margin-top: 12px; padding: 10px 12px; border-radius: 12px; font-size: 14px; }
+.quiz-exp.ok { background: var(--open-bg); }
+.quiz-exp.ng { background: var(--urgent-bg); }
+.quiz-exp.ok b { color: var(--open); }
+.quiz-exp.ng b { color: var(--urgent); }
+.quiz-foot { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; margin-top: 10px; }
+.pl-steps li.est::before { background: color-mix(in srgb, var(--c) 55%, var(--surface)); }
+.pl-steps li.est .pl-when { color: var(--ink-2); }

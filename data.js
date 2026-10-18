@@ -2,6 +2,7 @@
 // 日付は "YYYY-MM-DD"。pref を付けた回はその受験地を選んだときだけ表示。fallback は該当受験地の回がないときに表示。
 //期間は [開始, 終了]。null は未発表・不明。
 // parts: 合格を区分ごとに記録する単位 [[id, 表示名]]。回の parts はその回で受けられる区分（省略時は全区分）。
+// partsSeq: 区分を順番にすべて合格して取得する資格（学科→技能、一次→二次 など）。
 // applyUrl: 申込ページ（なければ公式ページ）。
 // guide: 合格率・勉強時間の目安（年度により変動する大まかな範囲）。
 // fees: 受験料 [{label, yen}]。announce: 合格発表日（確定日）、announceText: 時期だけ分かっている場合。
@@ -216,6 +217,7 @@ window.EXAMS = [
   {
     id: "fp1", name: "FP技能検定 1級", cat: "money", org: "金融財政事情研究会（きんざい）",
     url: "https://www.kinzai.or.jp/fp",
+    partsSeq: true,
     guide: { rate: "学科 約10〜15%", hours: "400〜600時間" },
     parts: [["学科","1級 学科"],["実技","1級 実技"]],
     fees: [{ label: "学科", yen: 8900 }, { label: "実技（資産相談業務）", yen: 28000 }],
@@ -379,6 +381,7 @@ window.EXAMS = [
   {
     id: "denkikouji2", name: "第二種電気工事士", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/construction/second/",
+    partsSeq: true,
     guide: { rate: "学科 約60%／技能 約70%", hours: "学科 50〜100時間＋技能の練習" },
     credits: [{ parts: ["学科"], unless: ["技能"], months: 6, text: "学科合格（または免除）で、次回の試験は学科免除・技能のみ" }],
     parts: [["学科", "学科試験"], ["技能", "技能試験"]],
@@ -394,6 +397,7 @@ window.EXAMS = [
   {
     id: "denkikouji1", name: "第一種電気工事士", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/construction/first/",
+    partsSeq: true,
     guide: { rate: "学科 約40〜50%／技能 約60%", hours: "200〜300時間" },
     renewal: { years: 5, text: "免状の交付後、5年以内ごとに定期講習の受講が必要" },
     credits: [{ parts: ["学科"], unless: ["技能"], months: 6, text: "学科合格で、次回の試験は学科免除・技能のみ" }],
@@ -410,6 +414,7 @@ window.EXAMS = [
   {
     id: "denken2", name: "第二種電気主任技術者（電験二種）", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/",
+    partsSeq: true,
     guide: { rate: "最終合格 約5%前後", hours: "約2,000時間" },
     credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "一次試験の合格で、その年度と翌年度の二次試験は一次免除" }],
     parts: [["一次", "一次試験"], ["二次", "二次試験"]], partsNote: "一次試験は科目合格制（理論・電力・機械・法規、3年間有効）",
@@ -456,6 +461,7 @@ window.EXAMS = [
   {
     id: "denken1", name: "第一種電気主任技術者（電験一種）", cat: "tech", org: "電気技術者試験センター",
     url: "https://www.shiken.or.jp/",
+    partsSeq: true,
     guide: { rate: "最終合格 約3〜5%", hours: "3,000時間以上" },
     parts: [["一次", "一次試験"], ["二次", "二次試験"]], partsNote: "一次試験は科目合格制（理論・電力・機械・法規、3年間有効）",
     credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "一次試験の合格で、その年度と翌年度の二次試験は一次免除" }],
@@ -518,6 +524,7 @@ window.EXAMS = [
   {
     id: "kenchikushi1", name: "一級建築士", cat: "tech", org: "建築技術教育普及センター",
     url: "https://www.jaeic.or.jp/",
+    partsSeq: true,
     guide: { rate: "総合 約10%", hours: "約1,000時間以上" },
     parts: [["学科", "学科試験"], ["製図", "設計製図試験"]],
     credits: [{ parts: ["学科"], unless: ["製図"], years: 4, text: "学科に合格すると、その年を含め5回の試験のうち3回まで学科が免除（設計製図のみ受験）" }],
@@ -531,6 +538,7 @@ window.EXAMS = [
   {
     id: "kenchikushi2", name: "二級建築士", cat: "tech", org: "建築技術教育普及センター",
     url: "https://www.jaeic.or.jp/",
+    partsSeq: true,
     guide: { rate: "総合 約20〜25%", hours: "約700時間" },
     parts: [["学科", "学科試験"], ["製図", "設計製図試験"]],
     credits: [{ parts: ["学科"], unless: ["製図"], years: 4, text: "学科に合格すると、その年を含め5回の試験のうち3回まで学科が免除（設計製図のみ受験）" }],
@@ -553,6 +561,7 @@ window.EXAMS = [
   {
     id: "gijutsushi", name: "技術士", cat: "tech", org: "日本技術士会",
     url: "https://www.engineer.or.jp/c_topics/011/011780.html",
+    partsSeq: true,
     guide: { rate: "一次 約30〜50%／二次 約10%", hours: "二次 300〜500時間" },
     parts: [["一次", "第一次試験"], ["二次", "第二次試験"]],
     fees: [{ label: "第一次試験", yen: 13000 }, { label: "第二次試験（1部門）", yen: 20500 }],
@@ -589,6 +598,7 @@ window.EXAMS = [
   {
     id: "shindanshi", name: "中小企業診断士", cat: "law", org: "中小企業診断協会",
     url: "https://www.j-smeca.jp/",
+    partsSeq: true,
     guide: { rate: "1次 約20〜30%／2次 約18%", hours: "約1,000時間" },
     credits: [{ parts: ["一次"], unless: ["二次"], years: 1, fyEnd: true, text: "第1次試験の合格で、その年度と翌年度の第2次試験を受験できる" }],
     parts: [["一次", "第1次試験"], ["二次", "第2次試験（筆記）"]], partsNote: "第1次は科目合格制。2026年度から第2次の口述試験は廃止",
