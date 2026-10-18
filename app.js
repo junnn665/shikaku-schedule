@@ -976,20 +976,32 @@
     return groups.join("");
   }
 
+  // 期限：3か月刻み〜5年、または日付で指定
+  const DEADLINES = [["", "指定なし"], ["m3", "3か月以内"], ["m6", "半年以内"], ["m9", "9か月以内"], ["m12", "1年以内"], ["m18", "1年半以内"],
+    ["m24", "2年以内"], ["m30", "2年半以内"], ["m36", "3年以内"], ["m48", "4年以内"], ["m60", "5年以内"], ["date", "日付で指定…"]];
+  const dlKey = (pl) => pl.deadline !== undefined ? pl.deadline : pl.years ? `m${Number(pl.years) * 12}` : "";
+  function deadlineOf(pl) {
+    const k = dlKey(pl);
+    if (!k) return "";
+    if (k === "date") return pl.date && pl.date >= TODAY ? pl.date : addYMD(TODAY, 1);
+    return addYMD(TODAY, 0, Number(k.slice(1)));
+  }
+
   function plannerHtml() {
     const pl = store.planner;
     let h = `<h2 class="section-title">最短ルートの自動提案</h2>
       <div class="card planner">
         <div class="pl-form">
           <label class="pl-wide">目標の資格<select id="plTarget"><option value="">選んでください</option>${targetOptions()}</select></label>
-          <label>期限<select id="plYears">${[["", "指定なし"], ["1", "1年以内"], ["2", "2年以内"], ["3", "3年以内"], ["5", "5年以内"]].map(([v, l]) => `<option value="${v}" ${String(pl.years || "") === v ? "selected" : ""}>${l}</option>`).join("")}</select></label>
+          <label>期限<select id="plDeadline">${DEADLINES.map(([v, l]) => `<option value="${v}" ${dlKey(pl) === v ? "selected" : ""}>${l}</option>`).join("")}</select>
+            ${dlKey(pl) === "date" ? `<input id="plDate" type="date" min="${TODAY}" value="${esc(pl.date || addYMD(TODAY, 1))}">` : ""}</label>
           <label>週の勉強時間<span class="pl-num"><input id="plWeekly" type="number" min="1" max="60" value="${pl.weekly || 7}" inputmode="numeric">時間</span></label>
         </div>`;
     if (!pl.target) return h + `<p class="hint">目標を選ぶと、資格のつながり・実際の試験日程・勉強時間の目安・合格済みの区分から、受ける順番と時期を組み立てます。</p></div>`;
     const { list, notes } = predecessors(pl.target);
     const skip = new Set(pl.skip || []);
     const include = list.filter((r) => !skip.has(r));
-    const deadline = pl.years ? addYMD(TODAY, Number(pl.years)) : "";
+    const deadline = deadlineOf(pl);
     const plan = buildPlan(pl.target, include, Number(pl.weekly) || 7, deadline);
     if (list.length) {
       h += `<div class="pl-pre"><small>先に受けるとよい資格（外したいものはチェックを外す）</small>
@@ -1014,7 +1026,7 @@
     const planText = plan.steps.map((st, i) => `${i + 1}. ${st.ex.name}${st.pid ? ` ${partName(st.ex, st.pid)}` : ""}：${st.session ? `${st.session.label}（試験 ${st.session.exam[0]}${st.est ? "・見込み" : ""}）` : st.anytime ? `随時（${st.date}ごろ）` : "日程未発表"}・目安${st.hours}時間`).join("\n");
     h += `<div class="plan-actions">
         <button class="btn" id="plStar" ${starable.length ? "" : "disabled"}>このプランの回を☆に追加${starable.length ? `（${starable.length}件）` : ""}</button>
-        <a class="btn ghost" target="_blank" rel="noopener" href="${esc(coachUrl(`学習計画：${refLabel(pl.target)}`, `/plan ${refLabel(pl.target)} 平日・休日あわせて週${pl.weekly || 7}時間${pl.years ? `、${pl.years}年以内` : ""}\n\n▼サイトで作ったルート\n${planText}\n\n（ここに得意・苦手や使える時間帯などを書くと計画に反映します）`))}">AIコーチに学習計画を作ってもらう ↗</a>
+        <a class="btn ghost" target="_blank" rel="noopener" href="${esc(coachUrl(`学習計画：${refLabel(pl.target)}`, `/plan ${refLabel(pl.target)} 平日・休日あわせて週${pl.weekly || 7}時間${deadline ? `、${fmt(deadline, true)}までに合格したい` : ""}\n\n▼サイトで作ったルート\n${planText}\n\n（ここに得意・苦手や使える時間帯などを書くと計画に反映します）`))}">AIコーチに学習計画を作ってもらう ↗</a>
       </div>
       <p class="hint">日程は収録済みの回から選び、まだ発表されていない回は前年の日程から「見込み」で出しています（☆に追加できるのは発表済みの回だけ）。勉強時間は一般的な目安です。</p>
       <input type="hidden" id="plStarKeys" value="${esc(starable.map((st) => st.session.key).join("|"))}">
@@ -1279,7 +1291,12 @@
     if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
     if (e.target.id === "quizExam") { quizSel = e.target.value; store.quizLast = quizSel; quizCur = null; save(false); renderQuiz(); return; }
     if (e.target.id === "plTarget") { store.planner = { ...store.planner, target: e.target.value, skip: [] }; save(); renderRoute(); return; }
-    if (e.target.id === "plYears") { store.planner = { ...store.planner, years: e.target.value }; save(); renderRoute(); return; }
+    if (e.target.id === "plDeadline") {
+      const v = e.target.value;
+      store.planner = { ...store.planner, deadline: v, years: undefined, date: v === "date" ? (store.planner.date || addYMD(TODAY, 1)) : store.planner.date };
+      save(); renderRoute(); return;
+    }
+    if (e.target.id === "plDate") { store.planner = { ...store.planner, deadline: "date", date: e.target.value }; save(); renderRoute(); return; }
     if (e.target.id === "plWeekly") { store.planner = { ...store.planner, weekly: Math.max(1, Number(e.target.value) || 7) }; save(); renderRoute(); return; }
     if (e.target.dataset && e.target.dataset.plskip) {
       const r = e.target.dataset.plskip, skip = new Set(store.planner.skip || []);
