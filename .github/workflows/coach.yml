@@ -49,9 +49,9 @@ jobs:
         if: env.HAS_KEY != 'true'
         run: |
           gh issue comment "$ISSUE" --body "AIコーチを使うには、Settings → Secrets and variables → Actions → Secrets に \`ANTHROPIC_API_KEY\` を登録してください（API 利用料がかかります）。"
-          exit 1
 
       - name: 依頼内容と、あなたの記録（☆・合格・問題の正答率）を用意
+        if: env.HAS_KEY == 'true'
         env:
           BODY: ${{ github.event.comment.body || github.event.issue.body }}
           TITLE: ${{ github.event.issue.title }}
@@ -76,6 +76,7 @@ jobs:
           gh api -X POST "repos/${{ github.repository }}/issues/$ISSUE/reactions" -f content=eyes > /dev/null || true
 
       - name: Claude が返答を作る
+        if: env.HAS_KEY == 'true'
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -108,7 +109,7 @@ jobs:
             quiz.js 以外のファイル（data.js など）は編集しない。git の操作はしない（コミットはワークフローが行う）。
 
       - name: 問題を追加したらコミット
-        if: env.CMD == '/quiz'
+        if: env.HAS_KEY == 'true' && env.CMD == '/quiz'
         run: |
           node -e "global.window={};require('./quiz.js')"
           if git diff --quiet -- quiz.js; then echo "quiz.js の変更なし"; exit 0; fi
