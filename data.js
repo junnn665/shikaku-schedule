@@ -6,8 +6,8 @@
 // applyUrl: 申込ページ（なければ公式ページ）。
 // guide: 合格率・勉強時間の目安（年度により変動する大まかな範囲）。
 // fees: 受験料 [{label, yen}]。announce: 合格発表日（確定日）、announceText: 時期だけ分かっている場合。
-// 情報確認日: 2026-10-12。申込前に必ず公式サイトで最新情報を確認してください。
-window.DATA_CHECKED = "2026-10-12";
+// 情報確認日: 2026-10-19。申込前に必ず公式サイトで最新情報を確認してください。
+window.DATA_CHECKED = "2026-10-19";
 
 window.CATEGORIES = {
   it: { label: "IT", color: "#2563eb" },
