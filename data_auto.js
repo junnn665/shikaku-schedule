@@ -1,9 +1,9 @@
 // 自動生成ファイル（scripts/update_auto.py）。手で編集しないでください。
 window.AUTO = {
  "sources": {
-  "kikenbutsu": "2026-10-21",
-  "shoubou": "2026-10-21",
-  "toeic": "2026-10-21"
+  "kikenbutsu": "2026-10-22",
+  "shoubou": "2026-10-22",
+  "toeic": "2026-10-22"
  },
  "kikenbutsu": [
   {
@@ -2373,7 +2373,6 @@ window.AUTO = {
     "乙1",
     "乙2",
     "乙3",
-    "乙4",
     "乙5",
     "乙6",
     "丙"
@@ -6975,7 +6974,7 @@ window.AUTO = {
    ]
   }
  ],
- "updated": "2026-10-21",
+ "updated": "2026-10-22",
  "toeic": [
   {
    "id": "2026-08-23",
