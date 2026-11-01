@@ -21,7 +21,7 @@
   // ---------- 保存（このブラウザのみ） ----------
   const KEY = "shikaku-schedule:v1";
   const store = (() => {
-    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, progress: {}, licenses: {}, scores: {}, targets: {}, quiz: {}, planner: {}, updatedAt: 0 };
+    let s = { stars: {}, memo: {}, cats: [], pref: "愛知県", passed: {}, passedParts: {}, feeChoice: {}, progress: {}, licenses: {}, scores: {}, targets: {}, quiz: {}, planner: {}, hidden: {}, updatedAt: 0 };
     try { s = { ...s, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; } catch (e) { /* 使えない環境 */ }
     return s;
   })();
@@ -122,7 +122,9 @@
     return hay.get(ex.id);
   };
   const matchQ = (ex) => !query || query.split(/[ 　]+/).filter(Boolean).every((w) => haystack(ex).includes(norm(w)));
-  const shown = (ex) => catOn(ex.cat) && matchQ(ex);
+  // 取る予定のない資格（非表示）
+  const isHidden = (ex) => !!(store.hidden && store.hidden[ex.id]);
+  const shown = (ex) => catOn(ex.cat) && matchQ(ex) && !isHidden(ex);
   const isStar = (key) => !!store.stars[key];
 
   // ---------- 部品 ----------
@@ -130,7 +132,7 @@
   const catStyle = (ex) => `style="--cat:${CATS[ex.cat].color}"`;
   const subLine = (ex) => `<div class="sub">${esc(CATS[ex.cat].label)} ・ ${esc(ex.org)}</div>`;
   const officialLink = (ex) => `<div class="links"><span class="link-row"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a><button class="link-btn" data-detail="${ex.id}">全国の日程 →</button></span>
-    ${passBtn(ex)}</div>`;
+    <span class="link-row">${passBtn(ex)}<button class="hide-btn" data-hide="${ex.id}" title="取る予定がない資格を一覧などから隠します">✕ 表示しない</button></span></div>`;
   // ---------- スコア（TOEIC） ----------
   const addYMD = (d, y = 0, m = 0) => { const t = toD(d); t.setUTCFullYear(t.getUTCFullYear() + y, t.getUTCMonth() + m); return toS(t); };
   const scoresOf = (ex) => ((store.scores && store.scores[ex.id]) || []).slice().sort((a, b) => b.date.localeCompare(a.date));
@@ -291,10 +293,12 @@
     return `<select id="${id}" class="exam-select"><option value="">資格を選んで、全国の試験日・申込期間を見る</option>${Object.entries(CATS).map(([k, c]) => `<optgroup label="${esc(c.label)}">${EXAMS.filter((e) => e.cat === k).map((e) => `<option value="${e.id}" ${cur === e.id ? "selected" : ""}>${esc(e.name)}</option>`).join("")}</optgroup>`).join("")}</select>`;
   }
   function renderList() {
-    let h = `<div class="card exam-picker">${examSelect("listPick", "")}</div>`;
+    const hiddenN = EXAMS.filter(isHidden).length;
+    let h = `<div class="card exam-picker">${examSelect("listPick", "")}
+      <div class="picker-foot"><button class="link-btn" id="openHide">表示する資格を選ぶ${hiddenN ? `（${hiddenN}件を非表示中）` : ""}</button></div></div>`;
     for (const [k, c] of Object.entries(CATS)) {
       if (!catOn(k)) continue;
-      const exams = EXAMS.filter((e) => e.cat === k && !isPassed(e) && matchQ(e));
+      const exams = EXAMS.filter((e) => e.cat === k && !isPassed(e) && matchQ(e) && !isHidden(e));
       if (!exams.length) continue;
       h += `<h2 class="section-title">${esc(c.label)}</h2>`;
       for (const ex of exams) {
@@ -718,7 +722,7 @@
   const SYNC_KEY = "shikaku-schedule:sync";
   const GIST_DESC = "shikaku-schedule state";
   const GIST_FILE = "state.json";
-  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "progress", "licenses", "scores", "targets", "quiz", "planner", "pref", "updatedAt"];
+  const SYNCED = ["stars", "memo", "passed", "passedParts", "feeChoice", "progress", "licenses", "scores", "targets", "quiz", "planner", "hidden", "pref", "updatedAt"];
   let sync = {};
   try { sync = JSON.parse(localStorage.getItem(SYNC_KEY) || "{}"); } catch (e) { /* 無視 */ }
   const saveSync = () => { try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch (e) { /* 無視 */ } };
@@ -821,6 +825,9 @@
     if (!box) return;
     const connected = !!sync.gistId;
     box.innerHTML = `
+      <h3>表示する資格</h3>
+      <p class="hint">取る予定のない資格を隠せます（いま ${EXAMS.filter(isHidden).length}件を非表示）。</p>
+      <div class="plan-actions"><button class="btn ghost small" id="openHide2">表示する資格を選ぶ</button></div>
       <h3>端末間の同期</h3>
       <p class="hint">☆・メモ・合格の記録・受験料の選択・受験地を、スマホとPCで共有します。保存先はあなたの GitHub アカウントの<b>シークレット Gist</b>（URLを知っている人だけが見られる非公開メモ）です。</p>
       <p class="sync-state"><span id="syncDot" class="sync-dot"></span><span id="syncStatus">${esc(syncStatus)}</span></p>
@@ -967,7 +974,7 @@
 
   function targetOptions() {
     const groups = Object.entries(CATS).map(([k, c]) => {
-      const opts = EXAMS.filter((e) => e.cat === k && !e.score).flatMap((e) => {
+      const opts = EXAMS.filter((e) => e.cat === k && !e.score && (!isHidden(e) || String(store.planner.target || "").split(":")[0] === e.id)).flatMap((e) => {
         const o = [];
         if (!e.parts || e.partsSeq || !e.sessions.some((s) => s.parts)) o.push([e.id, e.name]);
         if (e.parts && !(e.credits && !e.partsSeq && e.credits.some((r) => r.years === 3)))
@@ -1087,7 +1094,7 @@
 
   // ---------- 一問一答 ----------
   const QUIZ = window.QUIZ || {};
-  const quizExams = () => EXAMS.filter((e) => (QUIZ[e.id] || []).length);
+  const quizExams = () => EXAMS.filter((e) => (QUIZ[e.id] || []).length && (!isHidden(e) || e.id === quizSel));
   const qStat = (id) => store.quiz[id] || {};
   let quizSel = null, quizMode = "rec", quizCur = null, quizAnswered = null, quizOrder = [], quizRecent = [];
   function quizPool(exId) {
@@ -1208,6 +1215,7 @@
 
     h += `<article class="card detail-head" ${catStyle(ex)}>
       <div class="card-head"><div class="card-title"><h2 class="detail-name">${esc(ex.name)}</h2>${subLine(ex)}</div></div>
+      ${isHidden(ex) ? `<div class="warn-box hidden-note">この資格は「表示しない」にしています。<button class="link-btn" data-unhide="${ex.id}">表示に戻す</button></div>` : ""}
       <p class="note">${esc(noteOf(ex))}</p>
       <dl class="rows"><dt>受験料</dt><dd>${esc(feeText(ex))}${ex.feeNote ? `（${esc(ex.feeNote)}）` : ""}</dd></dl>
       ${guideLine(ex)}
@@ -1250,6 +1258,27 @@
   }
 
   const VIEWS = ["deadline", "list", "calendar", "route", "plan", "quiz", "have", "exam"];
+  // ---------- 表示する資格を選ぶ ----------
+  function renderHideDialog() {
+    const body = document.getElementById("hideBody");
+    const total = EXAMS.length, hiddenN = EXAMS.filter(isHidden).length;
+    body.innerHTML = `<p class="hint">取る予定のない資格のチェックを外すと、締切・一覧・カレンダー・ルートの候補・問題から外れます（全国の日程からはいつでも見られます）。☆や合格の記録は消えません。</p>
+      <p class="hide-sum">表示中 <b>${total - hiddenN}</b> ／ ${total}　<button class="link-btn" data-hideall="show">すべて表示</button>　<button class="link-btn" data-hideall="hide">すべて隠す</button></p>
+      ${Object.entries(CATS).map(([k, c]) => {
+        const exs = EXAMS.filter((e) => e.cat === k);
+        const on = exs.filter((e) => !isHidden(e)).length;
+        return `<section class="hide-cat"><div class="hide-cat-head"><span class="dot" style="background:${c.color}"></span><b>${esc(c.label)}</b><small>${on}/${exs.length}</small>
+          <button class="link-btn" data-hidecat="${k}" data-mode="${on ? "hide" : "show"}">${on ? "この分野をすべて隠す" : "この分野をすべて表示"}</button></div>
+          <div class="hide-grid">${exs.map((e) => `<label class="part-check"><input type="checkbox" data-vis="${e.id}" ${isHidden(e) ? "" : "checked"}><span>${esc(e.name)}</span></label>`).join("")}</div></section>`;
+      }).join("")}`;
+  }
+  function setHidden(ids, hide) {
+    store.hidden = { ...(store.hidden || {}) };
+    ids.forEach((id) => { if (hide) store.hidden[id] = true; else delete store.hidden[id]; });
+    save(); renderAll();
+    if (document.getElementById("hideDlg").open) renderHideDialog();
+  }
+
   // ---------- 全体 ----------
   function renderAll() {
     renderFilters(); renderDeadline(); renderList(); renderCalendar(); renderPlan(); renderRoute(); renderQuiz(); renderHave();
@@ -1290,6 +1319,17 @@
       return;
     }
     if (t.dataset.passparts) { openPassDialog(t.dataset.passparts); return; }
+    if (t.dataset.hide) {
+      const ex = EXAMS.find((e) => e.id === t.dataset.hide);
+      setHidden([ex.id], true);
+      toast(`${ex.name} を表示しないようにしました`, () => setHidden([ex.id], false));
+      return;
+    }
+    if (t.dataset.unhide) { setHidden([t.dataset.unhide], false); return; }
+    if (t.id === "openHide" || t.id === "openHide2") { renderHideDialog(); document.getElementById("settings").close(); document.getElementById("hideDlg").showModal(); return; }
+    if (t.id === "hideClose") { document.getElementById("hideDlg").close(); return; }
+    if (t.dataset.hideall) { setHidden(EXAMS.map((e) => e.id), t.dataset.hideall === "hide"); return; }
+    if (t.dataset.hidecat) { setHidden(EXAMS.filter((e) => e.cat === t.dataset.hidecat).map((e) => e.id), t.dataset.mode === "hide"); return; }
     if (t.dataset.detail) { openDetail(t.dataset.detail); return; }
     if (t.dataset.back) { setView(detail.prev || "list"); return; }
     if (t.dataset.dstatus) { detail.status = t.dataset.dstatus; renderDetail(); return; }
@@ -1392,6 +1432,7 @@
   document.addEventListener("change", (e) => {
     if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
     if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
+    if (e.target.dataset && e.target.dataset.vis) { setHidden([e.target.dataset.vis], !e.target.checked); return; }
     if (e.target.id === "listPick" || e.target.id === "detailPick") { if (e.target.value) openDetail(e.target.value); return; }
     if (e.target.id === "detailRegion") { detail.region = e.target.value; renderDetail(); return; }
     if (e.target.id === "detailGroup") { detail.group = e.target.checked; renderDetail(); return; }

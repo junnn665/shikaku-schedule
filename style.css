@@ -490,3 +490,18 @@ a.btn { text-decoration: none; display: inline-block; }
 .pref-chips span.me { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 @media (max-width: 520px) { .nat-row { grid-template-columns: 1fr; gap: 4px; } .nat-date { display: flex; gap: 8px; align-items: center; } .nat-date .status { margin-top: 0; } }
 .detail-head .link-btn { display: none; }
+
+/* hide (取る予定のない資格) */
+.hide-btn { background: none; border: 1px solid var(--line); border-radius: 999px; cursor: pointer; font-size: 12px; color: var(--ink-3); padding: 3px 10px; }
+.hide-btn:hover { color: var(--urgent); border-color: var(--urgent); }
+.picker-foot { margin-top: 6px; text-align: right; }
+.hide-sum { font-size: 14px; }
+.hide-cat { margin-top: 14px; }
+.hide-cat-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.hide-cat-head .dot { width: 10px; height: 10px; border-radius: 50%; }
+.hide-cat-head small { color: var(--ink-3); }
+.hide-cat-head .link-btn { margin-left: auto; font-size: 12px; }
+.hide-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+.hide-grid .part-check span { font-size: 13px; }
+#hideDlg { width: min(720px, calc(100% - 24px)); max-height: 86vh; }
+.hidden-note { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
