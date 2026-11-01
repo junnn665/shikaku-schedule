@@ -55,4 +55,33 @@ window.ROUTES = [
   { title: "語学", edges: [
     ["eiken", "toeic", "英検で4技能の基礎、TOEICでビジネス英語のスコア"],
   ] },
+  { title: "機械・設計（機械工事部の推奨）", edges: [
+    ["kikaisekkei:3級", "kikaisekkei:2級", "2級は実務経験などが必要"],
+    ["kikaisekkei:2級", "kikaisekkei:1級", ""],
+    ["cad3d:2級", "cad3d:準1級", "2級に合格すると準1級・1級の受験資格"],
+    ["cad3d:準1級", "cad3d:1級", ""],
+    ["kouatsu:乙種機械", "kouatsu:甲種機械", ""],
+    ["gijutsushi:一次", "gijutsushi:二次", "第一次合格（と登録）で技術士補。機械部門・情報工学部門など"],
+    ["kenchikusetsubi", "kenchikushi1", "建築設備士は一級建築士の受験資格になる"],
+    ["kankouji:2級二次", "kankouji:1級一次", ""],
+    ["kikaihozen:3級", "kikaihozen:2級", ""],
+  ] },
+  { title: "品質・IoT・AI（機械工事部の推奨）", edges: [
+    ["qc:3級", "qc:2級", ""],
+    ["qc:2級", "qc:1級", ""],
+    ["iot:基礎", "iot:中級", ""],
+    ["iot:中級", "iot:上級", ""],
+    ["aijisso:B級", "aijisso:A級", ""],
+    ["gkentei", "aijisso:A級", "AIの基礎知識が重なる"],
+  ] },
+  { title: "食・調理", edges: [
+    ["shokuei", "chourishi", "調理師の免許があれば食品衛生責任者の講習は不要"],
+    ["chourishi", "fugu", "ふぐ処理師は調理師免許が受験資格になる県が多い"],
+    ["foodcoord:3級", "foodcoord:2級", ""],
+    ["shokuseikatsu:3級", "shokuseikatsu:2級", ""],
+  ] },
+  { title: "福祉・暮らし", edges: [
+    ["fukushijk:3級", "fukushijk:2級", ""],
+    ["fukushijk:2級", "kenchikushi2", "住まいのバリアフリーの知識が設計に活きる"],
+  ] },
 ];

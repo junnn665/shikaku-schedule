@@ -21,7 +21,7 @@ const SITE = env.SITE_URL || `https://${(env.GITHUB_REPOSITORY || "junnn665/shik
 // ---- データ読み込み（サイトと同じ data.js / data_auto.js）
 const ctx = { window: {} };
 vm.createContext(ctx);
-for (const f of ["data.js", "data_auto.js"]) {
+for (const f of ["data.js", "data_more.js", "data_auto.js"]) {
   const p = path.join(ROOT, f);
   if (fs.existsSync(p)) vm.runInContext(fs.readFileSync(p, "utf8"), ctx, { filename: f });
 }

@@ -2,7 +2,7 @@
 
 静的サイト（GitHub Pages、`main` ブランチの root）。HTML/CSS/JS は基本的に触らない。
 
-- `data.js`：手で管理するデータ
+- `data.js`・`data_more.js`：手で管理するデータ（`data_more.js` は機械工事部の推奨資格、食・調理、福祉・暮らしなど。都道府県ごとの回は `pref` 付きで全国分を入れる）
 - `data_auto.js`：GitHub Actions（`.github/workflows/update-data.yml` → `scripts/update_auto.py`）が毎日自動生成。**手で編集しない**。
   危険物取扱者・消防設備士（全都道府県）と TOEIC はここから表示される（`data.js` 側の同じ資格の回は自動データがないときの予備）。
   自動取り込みが壊れている（`data_auto.js` の `sources` の日付が古い、Actions が失敗している）場合は `scripts/update_auto.py` を直す。
@@ -15,7 +15,7 @@
 
 ## 定期更新でやること
 
-1. `data.js` の各資格について、公式サイト（なければ大手資格学校のページ）で次を確認する。
+1. `data.js`・`data_more.js` の各資格について、公式サイト（なければ大手資格学校のページ）で次を確認する。
    - 新しく発表された回（申込期間・試験日）があれば `sessions` に追加
    - 既存の回の日付が変わっていれば修正
    - 申込期間が `null`（未発表）の回が発表されていれば埋める
@@ -23,7 +23,7 @@
    危険物取扱者・消防設備士・TOEIC は自動取り込みに任せる。
 3. 終わった回は消さずに残してよい（画面側で「終了」扱いになる）。ただし2年以上前の回は削除してよい。
 4. `window.DATA_CHECKED` を確認した日付に更新する。
-5. `node -e "global.window={};require('./data.js')"` で構文エラーがないことを確認する。
+5. `node -e "global.window={};require('./data.js');require('./data_more.js')"` で構文エラーがないことを確認する。
 6. 変更があればコミットして `main` に push。コミットメッセージに何を追加・修正したかを書く。
 
 ## 注意

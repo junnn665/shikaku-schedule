@@ -459,3 +459,34 @@ a.btn { text-decoration: none; display: inline-block; }
 .pl-steps li.est .pl-when { color: var(--ink-2); }
 .btn:disabled { opacity: .4; cursor: default; }
 #plDate { margin-top: 4px; }
+
+/* detail (全国の日程) */
+.title-link { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.title-link:hover { text-decoration: underline; text-decoration-color: var(--accent); }
+.link-row { display: inline-flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); font-size: 13px; cursor: pointer; font-weight: 500; }
+.exam-picker { padding: 10px 12px; border-left-color: var(--accent); }
+.exam-select { width: 100%; font: inherit; font-size: 15px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink); }
+.detail-top { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.detail-top .exam-select { flex: 1; min-width: 0; }
+.detail-name { margin: 0; font-size: 20px; line-height: 1.4; }
+.detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
+.detail-stats > div { background: var(--surface-2); border-radius: 12px; padding: 8px 10px; min-width: 0; }
+.detail-stats small { display: block; font-size: 11px; color: var(--ink-3); }
+.detail-stats b { display: block; font-family: "Zen Kaku Gothic New", sans-serif; font-weight: 900; font-size: 16px; line-height: 1.4; }
+.detail-stats span { display: block; font-size: 11px; color: var(--ink-2); }
+@media (max-width: 520px) { .detail-stats { grid-template-columns: 1fr; } }
+.detail-filters { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 14px 0 4px; }
+.nat-list { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.nat-row { display: grid; grid-template-columns: 128px 1fr; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; }
+.nat-row.mine { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+.nat-row.is-past { opacity: .55; }
+.nat-date b { display: block; font-size: 14px; line-height: 1.4; }
+.nat-date .status { margin-top: 4px; }
+.nat-title { font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.nat-title .star { font-size: 20px; }
+.pref-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.pref-chips span { font-size: 11px; padding: 1px 7px; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); }
+.pref-chips span.me { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+@media (max-width: 520px) { .nat-row { grid-template-columns: 1fr; gap: 4px; } .nat-date { display: flex; gap: 8px; align-items: center; } .nat-date .status { margin-top: 0; } }
+.detail-head .link-btn { display: none; }

@@ -52,6 +52,7 @@ jobs:
           node -e '
             global.window = {};
             require("./data.js");
+            require("./data_more.js");
             const list = window.EXAMS.map((e) => ({ id: e.id, name: e.name, url: e.url }));
             require("fs").writeFileSync("exams.json", JSON.stringify(list));
           '
@@ -161,8 +162,8 @@ jobs:
             - changed.md があれば、まずそこに書かれた資格（公式ページに新しい日程らしき記載が出たもの）を優先して確認する。
               changed.md がなければ、data.js の全資格を確認する。
             - 公式サイト（なければ大手資格学校のページ）を WebSearch / WebFetch で確認し、確認できた日付だけを反映する。推測で日付を入れない。
-            - 編集してよいのは data.js だけ。data_auto.js・HTML・CSS・JS・ワークフローは触らない。
-            - 編集後、node -e "global.window={};require('./data.js')" で構文エラーがないことを確認する。
+            - 編集してよいのは data.js と data_more.js だけ（data_more.js は食・調理、福祉・暮らし、機械工事部の推奨資格など）。data_auto.js・HTML・CSS・JS・ワークフローは触らない。
+            - 編集後、node -e "global.window={};require('./data.js');require('./data_more.js')" で構文エラーがないことを確認する。
             - git の操作（commit / push / branch）はしない。コミットはこのワークフローが行う。
             - 最後に、追加・変更した日程を「資格名：内容（出典URL）」の箇条書きで summary.md に書く。変更がなければ「変更なし」と書く。
 
@@ -170,15 +171,15 @@ jobs:
         id: commit
         if: steps.gate.outputs.run == 'true'
         run: |
-          node -e "global.window={};require('./data.js')"
-          if git diff --quiet -- data.js; then
+          node -e "global.window={};require('./data.js');require('./data_more.js')"
+          if git diff --quiet -- data.js data_more.js; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "data.js の変更なし"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data.js
+          git add data.js data_more.js
           git commit -m "日程を更新（Claude・$(TZ=Asia/Tokyo date +%Y-%m-%d)）" -m "$(cat summary.md 2>/dev/null | head -40)"
           git pull --rebase origin main
           git push

@@ -129,7 +129,7 @@
   const starBtn = (key) => `<button class="star ${isStar(key) ? "is-on" : ""}" data-star="${key}" aria-label="受験予定に追加" title="受験予定に追加">${isStar(key) ? "★" : "☆"}</button>`;
   const catStyle = (ex) => `style="--cat:${CATS[ex.cat].color}"`;
   const subLine = (ex) => `<div class="sub">${esc(CATS[ex.cat].label)} ・ ${esc(ex.org)}</div>`;
-  const officialLink = (ex) => `<div class="links"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a>
+  const officialLink = (ex) => `<div class="links"><span class="link-row"><a href="${esc(urlOf(ex))}" target="_blank" rel="noopener">公式・出典ページ ↗</a><button class="link-btn" data-detail="${ex.id}">全国の日程 →</button></span>
     ${passBtn(ex)}</div>`;
   // ---------- スコア（TOEIC） ----------
   const addYMD = (d, y = 0, m = 0) => { const t = toD(d); t.setUTCFullYear(t.getUTCFullYear() + y, t.getUTCMonth() + m); return toS(t); };
@@ -210,7 +210,7 @@
         <div class="card-head">
           ${starBtn(s.key)}
           <div class="card-title">
-            <h3>${esc(ex.name)}</h3>
+            <h3><button class="title-link" data-detail="${ex.id}">${esc(ex.name)}</button></h3>
             <div class="sub"><span class="status ${st.cls}">${st.label}</span> ${esc(s.label)}</div>
           </div>
           ${cd}
@@ -235,7 +235,7 @@
       <article class="card" data-exam="${ex.id}" ${catStyle(ex)}>
         <div class="card-head">
           ${starBtn(key)}
-          <div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
+          <div class="card-title"><h3><button class="title-link" data-detail="${ex.id}">${esc(ex.name)}</button></h3>${subLine(ex)}</div>
         </div>
         <p class="note">${esc(noteOf(ex))}</p>
         <dl class="rows"><dt>受験料</dt><dd>${esc(feeText(ex))}</dd></dl>
@@ -287,8 +287,11 @@
 
   // ---------- 一覧 ----------
   const showPast = new Set();
+  function examSelect(id, cur) {
+    return `<select id="${id}" class="exam-select"><option value="">資格を選んで、全国の試験日・申込期間を見る</option>${Object.entries(CATS).map(([k, c]) => `<optgroup label="${esc(c.label)}">${EXAMS.filter((e) => e.cat === k).map((e) => `<option value="${e.id}" ${cur === e.id ? "selected" : ""}>${esc(e.name)}</option>`).join("")}</optgroup>`).join("")}</select>`;
+  }
   function renderList() {
-    let h = "";
+    let h = `<div class="card exam-picker">${examSelect("listPick", "")}</div>`;
     for (const [k, c] of Object.entries(CATS)) {
       if (!catOn(k)) continue;
       const exams = EXAMS.filter((e) => e.cat === k && !isPassed(e) && matchQ(e));
@@ -301,7 +304,7 @@
         const visible = showPast.has(ex.id) ? ss : ss.filter((s) => statusOf(s).code !== "past");
         h += `
           <article class="card" id="ex-${ex.id}" ${catStyle(ex)}>
-            <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div></div>
+            <div class="card-head"><div class="card-title"><h3><button class="title-link" data-detail="${ex.id}">${esc(ex.name)}</button></h3>${subLine(ex)}</div></div>
             <p class="note">${esc(noteOf(ex))}</p>
             <div class="note">受験料：${esc(feeText(ex))}${ex.feeNote ? `（${esc(ex.feeNote)}）` : ""}</div>
             ${guideLine(ex)}
@@ -438,7 +441,7 @@
     h += `<h2 class="section-title">メモ</h2>`;
     for (const id of examIds) {
       const ex = EXAMS.find((e) => e.id === id);
-      h += `<article class="card" ${catStyle(ex)}><div class="card-title"><h3>${esc(ex.name)}</h3></div>
+      h += `<article class="card" ${catStyle(ex)}><div class="card-title"><h3><button class="title-link" data-detail="${ex.id}">${esc(ex.name)}</button></h3></div>
         <textarea class="memo" data-memo="${id}" placeholder="教材、勉強の進み具合、受験料など">${esc(store.memo[id] || "")}</textarea></article>`;
     }
     if (past.length) h += `<h2 class="section-title">終了した回</h2>` + past.map((s) => sessionCard(s, { progress: true })).join("");
@@ -503,7 +506,7 @@
     const target = (store.targets || {})[ex.id];
     const secs = ex.score.sections;
     return `<article class="card have-card" ${catStyle(ex)}>
-      <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
+      <div class="card-head"><div class="card-title"><h3><button class="title-link" data-detail="${ex.id}">${esc(ex.name)}</button></h3>${subLine(ex)}</div>
         <button class="btn ghost small" data-score="${ex.id}">スコアを追加・編集</button></div>
       <div class="score-hero">
         <div><small>有効な最高スコア</small><b>${best ? totalOf(best) : "—"}</b>${best ? `<span>${fmt(best.date, true)} 受験 ・ ${fmt(scoreUntil(ex, best), true)} まで</span>` : `<span>2年以内のスコアがありません</span>`}</div>
@@ -620,7 +623,7 @@
       const firstDate = latest(ex);
       const suggest = ex.renewal && firstDate ? addYMD(firstDate, ex.renewal.years) : "";
       return `<article class="card have-card" ${catStyle(ex)}>
-        <div class="card-head"><div class="card-title"><h3>${esc(ex.name)}</h3>${subLine(ex)}</div>
+        <div class="card-head"><div class="card-title"><h3><button class="title-link" data-detail="${ex.id}">${esc(ex.name)}</button></h3>${subLine(ex)}</div>
           ${ex.parts ? `<button class="btn ghost small" data-passparts="${ex.id}">区分を編集</button>` : `<button class="btn ghost small" data-unpass="${ex.id}">記録を消す</button>`}</div>
         <dl class="rows">
           ${ex.parts
@@ -1151,10 +1154,106 @@
     document.getElementById("view-quiz").innerHTML = h;
   }
 
-  const VIEWS = ["deadline", "list", "calendar", "route", "plan", "quiz", "have"];
+
+  // ---------- 資格ごとの全国の日程 ----------
+  const REGIONS = [
+    ["北海道・東北", ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県"]],
+    ["関東", ["茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県"]],
+    ["中部", ["新潟県", "富山県", "石川県", "福井県", "山梨県", "長野県", "岐阜県", "静岡県", "愛知県", "三重県"]],
+    ["近畿", ["滋賀県", "京都府", "大阪府", "兵庫県", "奈良県", "和歌山県"]],
+    ["中国・四国", ["鳥取県", "島根県", "岡山県", "広島県", "山口県", "徳島県", "香川県", "愛媛県", "高知県"]],
+    ["九州・沖縄", ["福岡県", "佐賀県", "長崎県", "熊本県", "大分県", "宮崎県", "鹿児島県", "沖縄県"]],
+  ];
+  const regionOf = (pref) => (REGIONS.find(([, ps]) => ps.includes(pref)) || [""])[0];
+  const prefShort = (p) => (p === "北海道" ? p : p.replace(/[都府県]$/, ""));
+  let detail = { id: null, status: "upcoming", region: "", group: true, prev: "list" };
+
+  function openDetail(id, push = true) {
+    const cur = location.hash.slice(1);
+    if (!cur.startsWith("exam")) detail.prev = VIEWS.includes(cur) ? cur : "list";
+    detail.id = id;
+    renderDetail();
+    setView("exam");
+    if (push) history.replaceState(null, "", `#exam/${id}`);
+    window.scrollTo({ top: 0 });
+  }
+
+  function renderDetail() {
+    const ex = EXAMS.find((e) => e.id === detail.id);
+    let h = `<div class="detail-top"><button class="btn ghost small" data-back="1">← 戻る</button>${examSelect("detailPick", detail.id)}</div>`;
+    if (!ex) { document.getElementById("view-exam").innerHTML = h + `<div class="empty">資格を選んでください</div>`; return; }
+    const all = ALL_SESSIONS.filter((s) => s.exam_ === ex);
+    const hasPref = all.some((s) => s.pref);
+    const st = detail.status;
+    let list = all.filter((s) => (st === "all" ? true : st === "open" ? statusOf(s).code === "open" : s.exam[1] >= TODAY || statusOf(s).code === "result"));
+    if (detail.region) list = list.filter((s) => !s.pref || regionOf(s.pref) === detail.region);
+    list.sort((a, b) => a.exam[0].localeCompare(b.exam[0]) || ((a.apply || [""])[1] || "").localeCompare((b.apply || [""])[1] || "") || (a.pref || "").localeCompare(b.pref || ""));
+
+    // 同じ日程の回をまとめる
+    const rows = [];
+    if (detail.group && hasPref) {
+      const map = new Map();
+      for (const s of list) {
+        const base = s.label.replace(/（[^）]*）$/, "");
+        const k = [base, s.apply ? s.apply.join() : "", s.exam.join(), s.announce || "", s.fallback ? "f" : ""].join("|");
+        if (!map.has(k)) { map.set(k, { base, sessions: [] }); rows.push(map.get(k)); }
+        map.get(k).sessions.push(s);
+      }
+    } else list.forEach((s) => rows.push({ base: s.label, sessions: [s] }));
+
+    const upcoming = all.filter((s) => s.exam[1] >= TODAY).sort((a, b) => a.exam[0].localeCompare(b.exam[0]));
+    const openN = all.filter((s) => statusOf(s).code === "open");
+    const mine = upcoming.find((s) => s.pref === store.pref) || (!hasPref ? upcoming[0] : null);
+    const prefsCovered = new Set(all.filter((s) => s.pref).map((s) => s.pref));
+
+    h += `<article class="card detail-head" ${catStyle(ex)}>
+      <div class="card-head"><div class="card-title"><h2 class="detail-name">${esc(ex.name)}</h2>${subLine(ex)}</div></div>
+      <p class="note">${esc(noteOf(ex))}</p>
+      <dl class="rows"><dt>受験料</dt><dd>${esc(feeText(ex))}${ex.feeNote ? `（${esc(ex.feeNote)}）` : ""}</dd></dl>
+      ${guideLine(ex)}
+      <div class="detail-stats">
+        <div><small>次の試験（全国）</small><b>${upcoming[0] ? fmt(upcoming[0].exam[0], true) : "—"}</b><span>${upcoming[0] && upcoming[0].pref ? esc(upcoming[0].pref) : upcoming[0] ? esc(upcoming[0].label) : "日程未掲載"}</span></div>
+        <div><small>いま申込できる回</small><b>${openN.length}</b><span>${openN.length ? `締切 ${fmt(openN.map((s) => s.apply[1]).sort()[0])} から` : "なし"}</span></div>
+        <div><small>${hasPref ? `受験地（${esc(store.pref)}）の次の回` : "あなたの次の回"}</small><b>${mine ? fmt(mine.exam[0], true) : "—"}</b><span>${mine ? (mine.apply ? `申込 ${fmtRange(mine.apply)}` : "申込期間は公式で確認") : hasPref ? "この受験地の日程は未掲載" : ""}</span></div>
+      </div>
+      ${officialLink(ex)}
+    </article>`;
+
+    if (ex.anytime && !all.length) {
+      h += `<div class="empty">この資格は決まった試験日がなく、随時受験・講習などで取得します。くわしくは公式ページで確認してください。</div>`;
+      document.getElementById("view-exam").innerHTML = h; return;
+    }
+    h += `<div class="detail-filters">
+      ${[["upcoming", "これから"], ["open", "申込受付中"], ["all", "終了した回も"]].map(([k, l]) => `<button class="chip ${st === k ? "is-on" : ""}" data-dstatus="${k}">${l}</button>`).join("")}
+      ${hasPref ? `<select id="detailRegion" class="fee-select"><option value="">全国</option>${REGIONS.map(([r]) => `<option ${detail.region === r ? "selected" : ""}>${r}</option>`).join("")}</select>
+        <label class="pl-chip"><input type="checkbox" id="detailGroup" ${detail.group ? "checked" : ""}>同じ日程をまとめる</label>` : ""}
+    </div>`;
+    if (hasPref) h += `<p class="hint">収録している都道府県：${prefsCovered.size}／47${prefsCovered.size < 47 ? `（未掲載：${PREFS.filter((p) => !prefsCovered.has(p)).map(prefShort).join("・")}）` : ""}</p>`;
+
+    if (!rows.length) h += `<div class="empty">条件に合う回はありません</div>`;
+    else h += `<div class="nat-list">${rows.map((r) => {
+      const s0 = r.sessions[0], stt = statusOf(s0);
+      const prefs = r.sessions.map((s) => s.pref).filter(Boolean);
+      const myS = r.sessions.find((s) => s.pref === store.pref) || (r.sessions.length === 1 ? s0 : null);
+      return `<div class="nat-row ${myS && s0.pref ? "mine" : ""} ${stt.code === "past" ? "is-past" : ""}">
+        <div class="nat-date"><b>${fmtRange(s0.exam)}</b><span class="status ${stt.cls}">${stt.label}</span></div>
+        <div class="nat-body">
+          <div class="nat-title">${esc(r.base)}${myS ? starBtn(myS.key) : ""}</div>
+          <div class="session-dates">申込 <b>${s0.apply ? fmtRange(s0.apply) : "公式で確認"}</b>${s0.announce ? `　発表 <b>${fmt(s0.announce)}</b>` : s0.announceText ? `　発表 <b>${esc(s0.announceText)}</b>` : ""}</div>
+          ${prefs.length ? `<div class="pref-chips">${prefs.map((p) => `<span class="${p === store.pref ? "me" : ""}">${esc(prefShort(p))}</span>`).join("")}</div>` : s0.fallback ? `<div class="pref-chips"><span>そのほかの地域</span></div>` : ""}
+          ${s0.detail ? `<div class="detail">${esc(s0.detail)}</div>` : ""}
+          ${applyLink(s0)}
+        </div>
+      </div>`;
+    }).join("")}</div>`;
+    document.getElementById("view-exam").innerHTML = h;
+  }
+
+  const VIEWS = ["deadline", "list", "calendar", "route", "plan", "quiz", "have", "exam"];
   // ---------- 全体 ----------
   function renderAll() {
     renderFilters(); renderDeadline(); renderList(); renderCalendar(); renderPlan(); renderRoute(); renderQuiz(); renderHave();
+    if (detail.id) renderDetail();
   }
 
   function setView(v) {
@@ -1163,7 +1262,7 @@
     const browse = ["deadline", "list", "calendar"].includes(v);
     document.getElementById("filters").style.display = browse ? "" : "none";
     document.getElementById("searchbar").style.display = browse ? "" : "none";
-    if (location.hash.slice(1) !== v) history.replaceState(null, "", `#${v}`);
+    if (v !== "exam" && location.hash.slice(1) !== v) history.replaceState(null, "", `#${v}`);
   }
 
   document.addEventListener("click", (e) => {
@@ -1191,6 +1290,9 @@
       return;
     }
     if (t.dataset.passparts) { openPassDialog(t.dataset.passparts); return; }
+    if (t.dataset.detail) { openDetail(t.dataset.detail); return; }
+    if (t.dataset.back) { setView(detail.prev || "list"); return; }
+    if (t.dataset.dstatus) { detail.status = t.dataset.dstatus; renderDetail(); return; }
     if (t.dataset.qans !== undefined) {
       const i = Number(t.dataset.qans), q = quizCur;
       const x = { ...qStat(q.id) };
@@ -1283,12 +1385,16 @@
 
   window.addEventListener("hashchange", () => {
     const v = location.hash.slice(1);
-    if (VIEWS.includes(v)) setView(v);
+    if (v.startsWith("exam/")) { openDetail(v.slice(5), false); return; }
+    if (VIEWS.includes(v) && v !== "exam") setView(v);
   });
 
   document.addEventListener("change", (e) => {
     if (e.target.id === "pref") { store.pref = e.target.value; save(); rebuild(); renderAll(); return; }
     if (e.target.dataset && e.target.dataset.fee) { store.feeChoice[e.target.dataset.fee] = Number(e.target.value); save(); renderPlan(); return; }
+    if (e.target.id === "listPick" || e.target.id === "detailPick") { if (e.target.value) openDetail(e.target.value); return; }
+    if (e.target.id === "detailRegion") { detail.region = e.target.value; renderDetail(); return; }
+    if (e.target.id === "detailGroup") { detail.group = e.target.checked; renderDetail(); return; }
     if (e.target.id === "quizExam") { quizSel = e.target.value; store.quizLast = quizSel; quizCur = null; save(false); renderQuiz(); return; }
     if (e.target.id === "plTarget") { store.planner = { ...store.planner, target: e.target.value, skip: [] }; save(); renderRoute(); return; }
     if (e.target.id === "plDeadline") {
@@ -1348,5 +1454,6 @@
   if (sync.gistId) pull();
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") pull(); });
   const initial = location.hash.slice(1);
-  setView(VIEWS.includes(initial) ? initial : "deadline");
+  if (initial.startsWith("exam/")) openDetail(initial.slice(5), false);
+  else setView(VIEWS.includes(initial) && initial !== "exam" ? initial : "deadline");
 })();

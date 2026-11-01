@@ -86,7 +86,7 @@ jobs:
             --allowedTools "Read,Write,Edit,Glob,Grep,WebSearch,WebFetch,Bash(node:*)"
           prompt: |
             あなたは資格試験の学習コーチです。リポジトリは資格試験の日程サイトで、次のファイルがあります。
-            - data.js（資格ごとの日程・受験料・合格率と勉強時間の目安 guide・区分 parts）、data_auto.js（危険物・消防設備士・TOEIC の日程）、routes.js（資格のつながり）、quiz.js（一問一答）
+            - data.js と data_more.js（資格ごとの日程・受験料・合格率と勉強時間の目安 guide・区分 parts）、data_auto.js（危険物・消防設備士・TOEIC の日程）、routes.js（資格のつながり）、quiz.js（一問一答）
             - coach/request.md：今回の依頼（1行目がコマンド）
             - coach/thread.md：この Issue のやり取り全体
             - coach/state.json：利用者の記録（stars=受験予定の回、passedParts/passed=合格済み、progress=申込などのチェック、quiz=問題ごとの正誤 {c:正解数, w:不正解数, streak}、scores=TOEIC のスコア、planner=サイトで選んだ目標）
@@ -106,7 +106,7 @@ jobs:
               編集後に node -e "global.window={};require('./quiz.js')" で構文を確認する。
 
             最後に必ず、Issue に投稿する返答を coach/reply.md に Markdown で書く（/quiz のときは追加した問題の一覧を短く）。
-            quiz.js 以外のファイル（data.js など）は編集しない。git の操作はしない（コミットはワークフローが行う）。
+            quiz.js 以外のファイル（data.js・data_more.js など）は編集しない。git の操作はしない（コミットはワークフローが行う）。
 
       - name: 問題を追加したらコミット
         if: env.HAS_KEY == 'true' && env.CMD == '/quiz'
