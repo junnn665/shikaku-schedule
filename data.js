@@ -6,8 +6,8 @@
 // applyUrl: 申込ページ（なければ公式ページ）。
 // guide: 合格率・勉強時間の目安（年度により変動する大まかな範囲）。
 // fees: 受験料 [{label, yen}]。announce: 合格発表日（確定日）、announceText: 時期だけ分かっている場合。
-// 情報確認日: 2026-11-08。申込前に必ず公式サイトで最新情報を確認してください。
-window.DATA_CHECKED = "2026-11-08";
+// 情報確認日: 2026-11-15。申込前に必ず公式サイトで最新情報を確認してください。
+window.DATA_CHECKED = "2026-11-15";
 
 window.CATEGORIES = {
   it: { label: "IT", color: "#2563eb" },
@@ -76,21 +76,21 @@ window.EXAMS = [
     url: "https://www.ipa.go.jp/shiken/kubun/fe.html",
     guide: { rate: "約40〜50%", hours: "150〜200時間" },
     fees: [{ label: "", yen: 7500 }],
-    note: "CBT方式の通年試験。テストセンターの空きがあれば随時申込・受験可能。", sessions: [],
+    note: "CBT方式の通年試験。テストセンターの空きがあれば随時申込・受験可能。2026/12/28〜2027年1月下旬はシステム更新のため試験を休止（年内申込分は12/27までに受験。再開後の申込は1月中旬以降）。", sessions: [],
   },
   {
     id: "ip", name: "ITパスポート試験", cat: "it", org: "IPA", anytime: true,
     url: "https://www3.jitec.ipa.go.jp/JitesCbt/",
     guide: { rate: "約50%", hours: "50〜180時間" },
     fees: [{ label: "", yen: 7500 }],
-    note: "CBT方式の通年試験。随時申込・受験可能。", sessions: [],
+    note: "CBT方式の通年試験。随時申込・受験可能。2026/12/28〜2027年1月下旬はシステム更新のため試験を休止（年内申込分は12/27までに受験。再開後の申込は1月中旬以降）。", sessions: [],
   },
   {
     id: "sg", name: "情報セキュリティマネジメント試験（SG）", cat: "it", org: "IPA", anytime: true,
     url: "https://www.ipa.go.jp/shiken/kubun/sg.html",
     guide: { rate: "約70%", hours: "50〜100時間" },
     fees: [{ label: "", yen: 7500 }],
-    note: "CBT方式の通年試験。随時申込・受験可能。", sessions: [],
+    note: "CBT方式の通年試験。随時申込・受験可能。2026/12/28〜2027年1月下旬はシステム更新のため試験を休止（年内申込分は12/27までに受験。再開後の申込は1月中旬以降）。", sessions: [],
   },
   {
     id: "aws", name: "AWS認定", cat: "it", org: "Amazon Web Services", anytime: true,
